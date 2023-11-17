@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,36 +22,39 @@
  */
 
 #include "IPAPIGeoIPProvider.h"
+
 #include "Cache.h"
-#include <QEventLoop>
+
+#include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
-#include <QNetworkRequest>
 #include <QObject>
-#include <QJsonDocument>
 
-FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider::IPAPIGeoIPProvider()
-{
-    m_cache = new FizzyAde::IPAPIGeoIPProvider::Cache();
+Nedrysoft::IPAPIGeoIPProvider::IPAPIGeoIPProvider::IPAPIGeoIPProvider() :
+        m_cache(new Nedrysoft::IPAPIGeoIPProvider::Cache()) {
+
 }
 
-FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider::~IPAPIGeoIPProvider()
-{
+Nedrysoft::IPAPIGeoIPProvider::IPAPIGeoIPProvider::~IPAPIGeoIPProvider() {
     delete m_cache;
 }
 
-void FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider::lookup(const QString host, FizzyAde::Core::GeoFunction function)
-{
+auto Nedrysoft::IPAPIGeoIPProvider::IPAPIGeoIPProvider::lookup(
+        const QString host,
+        Nedrysoft::Core::GeoFunction function ) -> void {
+
     auto cacheResultObject = QJsonObject();
 
     if (m_cache->find(host, cacheResultObject)) {
         function(host, cacheResultObject.toVariantMap());
     } else {
-        const auto mapFields = QStringList() << "creationTime" << "country" << "countryCode" << "region" << "regionName" << "city" << "zip" << "lat" "lon" << "timezone" << "isp" << "org";
+        const auto mapFields =
+                QStringList() << "creationTime" << "country" << "countryCode" << "region" << "regionName" << "city"
+                              << "zip" << "lat" "lon" << "timezone" << "isp" << "org";
         auto manager = new QNetworkAccessManager();
 
-        connect(manager, &QNetworkAccessManager::finished, [=] (QNetworkReply *reply) {
-            if (reply->error()==QNetworkReply::NoError) {
+        connect(manager, &QNetworkAccessManager::finished, [=](QNetworkReply *reply) {
+            if (reply->error() == QNetworkReply::NoError) {
                 auto resultMap = QVariantMap();
                 auto jsonDocument = QJsonDocument::fromJson(reply->readAll());
 
@@ -56,7 +62,7 @@ void FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider::lookup(const QString host
                     auto requiredFields = QStringList(mapFields) << "as";
                     auto responseValid = true;
 
-                    for(const auto &field : requiredFields) {
+                    for (const auto &field : requiredFields) {
                         if (!jsonDocument.object().contains(field)) {
                             responseValid = false;
                             break;
@@ -74,7 +80,7 @@ void FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider::lookup(const QString host
                         resultMap["asn"] = jsonDocument.object()["as"].toVariant();
 
                         function(host, resultMap);
-                   }
+                    }
                 }
             }
 
@@ -87,14 +93,13 @@ void FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider::lookup(const QString host
             }
         });
 
-        manager->get(QNetworkRequest(QUrl("http://ip-api.com/json/"+host)));
+        manager->get(QNetworkRequest(QUrl("http://ip-api.com/json/" + host)));
     }
 }
 
-void FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider::lookup(const QString host)
-{
-   lookup(host, [=] (const QString &hostAddress, const QVariantMap &result) {
-       emit this->result(hostAddress, result);
-   });
+auto Nedrysoft::IPAPIGeoIPProvider::IPAPIGeoIPProvider::lookup(const QString host) -> void {
+    lookup(host, [=](const QString &hostAddress, const QVariantMap &result) {
+        Q_EMIT this->result(hostAddress, result);
+    });
 }
 

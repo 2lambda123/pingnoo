@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +22,45 @@
  */
 
 #include "RegExHostMaskerComponent.h"
-#include "RegExHostMasker.h"
+
 #include "ComponentSystem/IComponentManager.h"
-#include <QDebug>
+#include "RegExHostMasker.h"
+#include "RegExHostMaskerSettingsPage.h"
+
 #include <QJsonDocument>
 
-RegExHostMaskerComponent::RegExHostMaskerComponent() = default;
+RegExHostMaskerComponent::RegExHostMaskerComponent() :
+        m_hostMasker(nullptr),
+        m_settingsPage(nullptr) {
 
-RegExHostMaskerComponent::~RegExHostMaskerComponent()
-{
-    for (auto maskerInstance : m_maskerList) {
-        FizzyAde::ComponentSystem::removeObject(maskerInstance);
-
-        delete maskerInstance;
-    }
+    qRegisterMetaType<Nedrysoft::RegExHostMasker::RegExHostMaskerItem>();
 }
 
-void RegExHostMaskerComponent::initialiseEvent()
-{
-    auto maskerInstance = new FizzyAde::RegExHostMasker::RegExHostMasker();
+RegExHostMaskerComponent::~RegExHostMaskerComponent() {
 
-    FizzyAde::ComponentSystem::addObject(maskerInstance);
+}
 
-    m_maskerList.append(maskerInstance);
+auto RegExHostMaskerComponent::initialiseEvent() -> void {
+    m_hostMasker = new Nedrysoft::RegExHostMasker::RegExHostMasker();
+    m_settingsPage = new Nedrysoft::RegExHostMasker::RegExHostMaskerSettingsPage();
+
+    Nedrysoft::ComponentSystem::addObject(m_hostMasker);
+    Nedrysoft::ComponentSystem::addObject(m_settingsPage);
+}
+
+auto RegExHostMaskerComponent::initialisationFinishedEvent() -> void {
+}
+
+auto RegExHostMaskerComponent::finaliseEvent() -> void {
+    if (m_settingsPage) {
+        Nedrysoft::ComponentSystem::removeObject(m_settingsPage);
+
+        delete m_settingsPage;
+    }
+
+    if (m_hostMasker) {
+        Nedrysoft::ComponentSystem::removeObject(m_hostMasker);
+
+        delete m_hostMasker;
+    }
 }

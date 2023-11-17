@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,26 +23,28 @@
 
 #include "Core.h"
 
-FizzyAde::Core::Core::Core()
-{
-    m_mainWindow = new FizzyAde::Core::MainWindow;
+Nedrysoft::Core::Core::Core() :
+        m_mainWindow(new Nedrysoft::Core::MainWindow) {
 
     m_mainWindow->show();
+    m_mainWindow->raise();
+    m_mainWindow->activateWindow();
+
+    Nedrysoft::ComponentSystem::addObject(m_mainWindow);
 }
 
-FizzyAde::Core::Core::~Core()
-{
+Nedrysoft::Core::Core::~Core() {
+    Nedrysoft::ComponentSystem::removeObject(m_mainWindow);
+
     delete m_mainWindow;
 }
 
-void FizzyAde::Core::Core::open()
-{
+auto Nedrysoft::Core::Core::open() -> void {
     m_mainWindow->initialise();
 
-    emit coreOpened();
+    Q_EMIT coreOpened();
 }
 
-QMainWindow *FizzyAde::Core::Core::mainWindow()
-{
-    return(m_mainWindow);
+auto Nedrysoft::Core::Core::mainWindow() -> QMainWindow * {
+    return m_mainWindow;
 }

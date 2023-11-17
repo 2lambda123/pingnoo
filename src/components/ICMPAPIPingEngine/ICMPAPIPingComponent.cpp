@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +22,27 @@
  */
 
 #include "ICMPAPIPingComponent.h"
+
 #include "ComponentSystem/IComponentManager.h"
 #include "ICMPAPIPingEngineFactory.h"
-#include <WS2tcpip.h>
+
 #include <IPExport.h>
-#include <QDebug>
+#include <WS2tcpip.h>
+#include <spdlog/spdlog.h>
 
 ICMPAPIPingComponent::ICMPAPIPingComponent() = default;
 
 ICMPAPIPingComponent::~ICMPAPIPingComponent() = default;
 
-void ICMPAPIPingComponent::initialiseEvent()
-{
+auto ICMPAPIPingComponent::initialiseEvent() -> void {
 #if defined(Q_OS_WIN)
     WSADATA wsaData;
 
-    if (WSAStartup(MAKEWORD(2,2), &wsaData)!=0)
-    {
-        qDebug() << "error initialising winsock";
+    if (WSAStartup(MAKEWORD(2,2), &wsaData)!=0) {
+        spdlog::warn("error initialising winsock");
     }
 #endif
-    //FizzyAde::ComponentSystem::addObject(new FizzyAde::Pingnoo::ICMPAPIPingEngineFactory());
+    //Nedrysoft::ComponentSystem::addObject(new Nedrysoft::Pingnoo::ICMPAPIPingEngineFactory());
 }
 
 

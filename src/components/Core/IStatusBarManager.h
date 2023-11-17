@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/07/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,43 +21,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_ISTATUSBARMANAGER_H
-#define FIZZYADE_CORE_ISTATUSBARMANAGER_H
+#ifndef NEDRYSOFT_CORE_ISTATUSBARMANAGER_H
+#define NEDRYSOFT_CORE_ISTATUSBARMANAGER_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
 #include "Core/IContextManager.h"
+#include "CoreSpec.h"
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     /**
-     * IStatusBarManager interface
+     * @brief       The IStatusBarManager describes a manager for status bars.
      *
-     * IStatusBarManager handles the management of status bars
+     * @details     The status bar manager handles the management of the application status bar, components may use
+     *              the status bar to display information about tasks or results that are running.
      *
+     *              The status bar is normally context sensitive although components may created fixed entries that
+     *              are shown regardless of the current application context.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IStatusBarManager :
+            public Nedrysoft::ComponentSystem::IInterface {
 
-    class FIZZYADE_CORE_DLLSPEC IStatusBarManager :
-        public FizzyAde::ComponentSystem::IInterface
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
-        /**
-         * Returns the IStatusBarManager instance
-         *
-         * @return the IStatusBarManager instance
-         */
-        static IStatusBarManager *getInstance()
-        {
-            return(ComponentSystem::getObject<IStatusBarManager>());
-        }
-
-    public:
-
+        public:
+            /**
+             * @brief       Returns the IStatusBarManager instance.
+             *
+             * @returns     the IStatusBarManager instance.
+             */
+            static auto getInstance() -> IStatusBarManager * {
+                return ComponentSystem::getObject<IStatusBarManager>();
+            }
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IStatusBarManager, "com.fizzyade.core.IStatusBarManager/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IStatusBarManager, "com.nedrysoft.core.IStatusBarManager/1.0.0")
 
-#endif // FIZZYADE_CORE_ISTATUSBARMANAGER_H
+#endif // NEDRYSOFT_CORE_ISTATUSBARMANAGER_H

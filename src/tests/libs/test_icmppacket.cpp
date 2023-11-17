@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,14 +23,15 @@
 
 #include "catch.hpp"
 #include "ICMPPacket/ICMPPacket.h"
-#include <QString>
 
-TEST_CASE("ICMPPacket Tests", "[app][libs][network]")
-{
+#include <QString>
+#include <QHostAddress>
+
+TEST_CASE("ICMPPacket Tests", "[app][libs][network]") {
     QByteArray testData = QString("This Is A Test Of The ICMP Checksum Routine").toLatin1();
 
     SECTION("checksum produces correct result") {
-        auto checksum = FizzyAde::Utils::ICMPPacket::checksum(testData.data(), testData.length());
+        auto checksum = Nedrysoft::ICMPPacket::ICMPPacket::checksum(testData.data(), testData.length());
 
         REQUIRE_MESSAGE(checksum==0x38D1, "ICMP checksum was calculated incorrectly.");
     }

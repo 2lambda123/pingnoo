@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,129 +21,125 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_PINGNOO_ICMPAPIPINGITEM_H
-#define FIZZYADE_PINGNOO_ICMPAPIPINGITEM_H
+#ifndef NEDRYSOFT_PINGNOO_ICMPAPIPINGITEM_H
+#define NEDRYSOFT_PINGNOO_ICMPAPIPINGITEM_H
 
 #include "ICMPAPIPingEngineSpec.h"
-#include <chrono>
-#include <QObject>
 
-namespace FizzyAde::Pingnoo
-{
+#include <QObject>
+#include <chrono>
+
+namespace Nedrysoft::Pingnoo {
     class ICMPAPIPingTarget;
 
     class ICMPAPIPingItemData;
 
     /**
-     * Object used to store information about a tracked request
+     * @brief       The ICMPAPIPingItem stores information about a ping request.
      *
-     * The FZICMPPingTransmitter registers each ping request with the
-     * engine, this class holds the required information to allow
-     * replies to be matched to requests (and timed) and also to allow
-     * timeouts to be discovered.
-     *
+     * @details     The ICMPPingTransmitter registers each ping request with the engine, this class holds the required
+     *              information to allow replies to be matched to requests (and timed) and also to allow timeouts to
+     *              be generated.
      */
+    class ICMPAPIPingItem :
+            public QObject {
 
-    class ICMPAPIPingItem : public QObject
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
-        /**
-         * Default constructor
-         */
-        ICMPAPIPingItem();
+        public:
+            /**
+             * @brief       Constructs an ICMPAPIPingItem.
+             */
+            ICMPAPIPingItem();
 
-        /**
-         * Sets the id used in the ping request
-         *
-         * @param[in] id the id to use
-         */
-        void setId(uint16_t id);
+            /**
+             * @brief       Sets the id field of the ping request.
+             *
+             * @notes       Some platforms do not allow setting of the id field and will ignore it, instead they
+             *              may use the process id or something similar instead.
+             *
+             * @param[in]   id the identifier of the request.
+             */
+            auto setId(uint16_t id) -> void;
 
-        /**
-         * Returns the id used in the ping request
-         *
-         * @return the id
-         */
-        uint16_t id(void);
+            /**
+             * @brief       Returns the id used in the ping request.
+             *
+             * @returns     the id.
+             */
+            auto id(void) -> uint16_t;
 
-        /**
-         * Sets the sequence id used in the ping request
-         *
-         * @param[in] sequence the sequence id to use
-         */
-        void setSequenceId(uint16_t sequence);
+            /**
+             * @brief       Sets the sequence id used in the ping request.
+             *
+             * @param[in]   sequence the sequence identifier.
+             */
+            auto setSequenceId(uint16_t sequence) -> void;
 
-        /**
-         * Returns the sequence id used in the ping request
-         *
-         * @return the sequence id
-         */
-        uint16_t sequenceId();
+            /**
+             * @brief       Set whether this request has been serviced.
+             *
+             * @details     Marks the request as being serviced, prevents a packet being flagged as both replied to
+             *              and timeout in race condition situations.
+             *
+             * @param[in]   serviced true if serviced; otherwise false.
+             */
+            auto setServiced(bool serviced) -> void;
 
-        /**
-         * Marks the request as being serviced, prevents a packet
-         * being flagged as both replied to and timeout in race
-         * condition situations.
-         *
-         * @param[in] serviced true if serviced, else false
-         */
-        void setServiced(bool serviced);
+            /**
+             * @brief       Returns the serviced status of the request.
+             *
+             * @returns     true if request has been serviced; otherwise false.
+             */
+            auto serviced() -> bool;
 
-        /**
-         * Returns the serviced status of the request
-         *
-         * @return true if it has been serviced, else false
-         */
-        bool serviced();
+            /**
+             * @brief       Sets the sample number for this request.
+             *
+             * @param[in]   sampleNumber the sample number.
+             */
+            auto setSampleNumber(unsigned long sampleNumber) -> void;
 
-        /**
-         * Sets the sample number for this request
-         *
-         * @param[in] sampleNumber the sample number
-         */
-        void setSampleNumber(unsigned long sampleNumber);
+            /**
+             * @brief       Returns the sample number for this request.
+             *
+             * @returns     the sample number.
+             */
+            auto sampleNumber() -> unsigned long;
 
-        /**
-         * Returns the sample number for this request
-         *
-         * @return the sample number
-         */
-        unsigned long sampleNumber();
+            /**
+             * @brief       Sets the target associated with this request.
+             *
+             * @param[in]   target the target.
+             */
+            auto setTarget(Nedrysoft::Pingnoo::ICMPAPIPingTarget *target) -> void;
 
-        /**
-         * Sets the target associated with this request
-         *
-         * @param[in] target the target
-         */
-        void setTarget(FizzyAde::Pingnoo::ICMPAPIPingTarget *target);
+            /**
+             * @brief       Returns the target associated with this request.
+             *
+             * @returns     the request.
+             */
+            auto target() -> Nedrysoft::Pingnoo::ICMPAPIPingTarget *;
 
-        /**
-         * Returns the target associated with this request
-         *
-         * @return the request
-         */
-        FizzyAde::Pingnoo::ICMPAPIPingTarget *target();
+            /**
+             * @brief       Sets the time at which the request was transmitted.
+             *
+             * @param[in]   time the high resolution clock time.
+             */
+            auto setTransmitTime(std::chrono::high_resolution_clock::time_point time) -> void;
 
-        /**
-         * Sets the time at which the request was transmitted
-         *
-         * @param[in] time the high resolution clock time
-         */
-        void setTransmitTime(std::chrono::high_resolution_clock::time_point time);
+            /**
+             * @brief       Returns the time at which the request was transmitted.
+             *
+             * @returns     the high resolution clock time when the request was sent.
+             */
+            auto transmitTime(void) -> std::chrono::high_resolution_clock::time_point;
 
-        /**
-         * Returns the time at which the request was transmitted
-         *
-         * @return the high resolution clock time when the request was sent
-         */
-        std::chrono::high_resolution_clock::time_point transmitTime(void);
+        protected:
 
-    protected:
-
-        std::shared_ptr<ICMPAPIPingItemData> d;
+            std::shared_ptr<ICMPAPIPingItemData> d;
     };
 }
 
-#endif // FIZZYADE_PINGNOO_ICMPAPIPINGITEM_H
+#endif // NEDRYSOFT_PINGNOO_ICMPAPIPINGITEM_H

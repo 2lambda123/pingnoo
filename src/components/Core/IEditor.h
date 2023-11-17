@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,44 +21,66 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_IEDITOR_H
-#define FIZZYADE_CORE_IEDITOR_H
+#ifndef NEDRYSOFT_CORE_IEDITOR_H
+#define NEDRYSOFT_CORE_IEDITOR_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
+#include "CoreSpec.h"
+
 #include <QWidget>
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     /**
-     * Interface definition of a editor
+     * @brief       The IEditor interface defines the contract of an editor
      *
-     * An editor is an editor window that contains a widget and is managed
-     * by the application.
-     *
+     * @details     An editor is an editor window that contains a widget and is managed
+     *              by the application.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IEditor :
+            public Nedrysoft::ComponentSystem::IInterface {
 
-    class FIZZYADE_CORE_DLLSPEC IEditor :
-        public FizzyAde::ComponentSystem::IInterface
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::ComponentSystem::IInterface)
+            Q_INTERFACES(Nedrysoft::ComponentSystem::IInterface)
 
-    public:
-        virtual ~IEditor() {}
+        public:
+            /**
+             * @brief       Destroys the IEditor.
+             */
+            virtual ~IEditor() = default;
 
-        /**
-         * Sets the measurement interval for this engine instance
-         *
-         * @param[in] interval interval time
-         * @return returns true on success, else false
-         *
-         */
-        virtual QWidget *widget() = 0;
+            /**
+             * @brief       Returns the widget for the editor.
+             *
+             * @returns     the widget
+             */
+            virtual auto widget() -> QWidget * = 0;
+
+            /**
+             * @brief       Returns the display name for the editor.
+             *
+             * @details     Returns the user displayable name of the editor, this is usually used by the
+             *              Nedrysoft::Core::IEditorManager to display the name of the widget in the title.
+             *
+             * @returns     the displayed name of the editor.
+             */
+            virtual auto displayName() -> QString = 0;
+
+            /**
+             * @brief       The editor manager calls this method when an editor is activated. (i.e becomes the active
+             *              editor)
+             */
+            virtual auto activated() -> void = 0;
+
+            /**
+             * @brief       The editor manager calls this method when an editor is deactivated. (i.e focus is lost)
+             *              editor)
+             */
+            virtual auto deactivated() -> void = 0;
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IEditor, "com.fizzyade.core.IEditor/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IEditor, "com.nedrysoft.core.IEditor/1.0.0")
 
-#endif // FIZZYADE_CORE_IEDITOR_H
+#endif // NEDRYSOFT_CORE_IEDITOR_H

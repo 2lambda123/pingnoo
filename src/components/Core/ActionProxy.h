@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 01/12/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,58 +21,52 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_ACTIONPROXY_H
-#define FIZZYADE_CORE_ACTIONPROXY_H
+#ifndef NEDRYSOFT_CORE_ACTIONPROXY_H
+#define NEDRYSOFT_CORE_ACTIONPROXY_H
 
 #include <QAction>
 #include <QPointer>
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     /**
-     * ActionProxy
+     * @brief       The ActionProxy class is used to proxy actions depending on context.
      *
-     * A proxy class for a QAction, allows an Action
-     * to be proxied through, mutliple inputs can be
-     * selected one at a time to be the output.
-     *
+     * @details     A proxy class for a QAction, allows an Action to be proxied through, the active QAction can
+     *              be switched depending on the current context of the application.
      */
-
     class ActionProxy :
-        public QAction
-    {
-    public:
+            public QAction {
 
-        /**
-         * Creates a proxy action
-         *
-         */
-        ActionProxy(QObject *parent=nullptr);
+        public:
 
-        /**
-         * Sets the currently active target action
-         *
-         * @param[in] action the action to be proxied
-         *
-         */
-        void setActive(QAction *action);
+            /**
+             * @brief       Constructs a new ActionProxy instance which is a child of the parent.
+             *
+             * @param[in]   parent the owner object.
+             */
+            ActionProxy(QObject *parent = nullptr);
 
-    protected:
-        /**
-         * Connects the current action to the proxy
-         *
-         */
-        void connectAction();
+            /**
+             * @brief       Sets the currently active QAction.
+             *
+             * @param[in]   action the action to be proxied.
+             */
+            auto setActive(QAction *action) -> void;
 
-        /**
-         * Disconnects the current action from the proxy
-         *
-         */
-        void disconnectAction();
+        protected:
+            /**
+             * @brief       Connects the current action to the proxy.
+             */
+            auto connectAction() -> void;
 
-    private:
-        QPointer<QAction> m_action;
+            /**
+             * @brief       Disconnects the current action from the proxy.
+             */
+            auto disconnectAction() -> void;
+
+        private:
+            QPointer<QAction> m_action;                         //! Pointer to active action
     };
 }
 
-#endif // FIZZYADE_CORE_ACTIONPROXY_H
+#endif // NEDRYSOFT_CORE_ACTIONPROXY_H

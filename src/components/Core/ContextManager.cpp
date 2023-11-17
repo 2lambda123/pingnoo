@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,31 +23,36 @@
 
 #include "ContextManager.h"
 
-FizzyAde::Core::ContextManager::ContextManager()
-{
-    m_currentContextId = 0;
-    m_nextContextId = 1;
+Nedrysoft::Core::ContextManager::ContextManager() :
+        m_currentContextId(0),
+        m_nextContextId(1) {
+
 }
 
-int FizzyAde::Core::ContextManager::registerContext(QString contextIdentifier)
-{
+auto Nedrysoft::Core::ContextManager::registerContext(QString contextIdentifier) -> int {
     Q_UNUSED(contextIdentifier)
 
     m_contextIds[contextIdentifier] = m_nextContextId;
 
-    return(m_nextContextId++);
+    return m_nextContextId++;
 }
 
-int FizzyAde::Core::ContextManager::setContext(int contextIdentifier)
-{
-    emit contextChanged(contextIdentifier, m_currentContextId);
+auto Nedrysoft::Core::ContextManager::setContext(int contextIdentifier) -> int {
+    Q_EMIT contextChanged(contextIdentifier, m_currentContextId);
 
     m_currentContextId = contextIdentifier;
 
-    return(0);
+    return 0;
 }
 
-int FizzyAde::Core::ContextManager::context()
-{
-    return(m_currentContextId);
+auto Nedrysoft::Core::ContextManager::context() -> int {
+    return m_currentContextId;
+}
+
+auto Nedrysoft::Core::ContextManager::context(QString contextName) -> int {
+    if (m_contextIds.contains(contextName)) {
+        return m_contextIds[contextName];
+    }
+
+    return 0;
 }

@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,17 +22,16 @@
  */
 
 #include "MapWidget.h"
+
 #include <QQuickWidget>
 
-FizzyAde::MapWidget::MapWidget::MapWidget(QWidget *parent) :
-    QWidget(parent)
-{
-    m_mapWidget = new QQuickWidget();
+Nedrysoft::MapWidget::MapWidget::MapWidget(QWidget *parent) :
+        QWidget(parent),
+        m_mapWidget(new QQuickWidget()),
+        m_mapLayout(new QGridLayout()) {
 
-    m_mapWidget->setSource(QUrl(QString::fromUtf8("qrc:/FizzyAde/MapWidget/map.qml")));
+    m_mapWidget->setSource(QUrl(QString::fromUtf8("qrc:/Nedrysoft/MapWidget/map.qml")));
     m_mapWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
-
-    m_mapLayout = new QGridLayout();
 
     m_mapLayout->addWidget(m_mapWidget);
 
@@ -38,4 +40,4 @@ FizzyAde::MapWidget::MapWidget::MapWidget(QWidget *parent) :
     this->setLayout(m_mapLayout);
 }
 
-FizzyAde::MapWidget::MapWidget::~MapWidget() = default;
+Nedrysoft::MapWidget::MapWidget::~MapWidget() = default;

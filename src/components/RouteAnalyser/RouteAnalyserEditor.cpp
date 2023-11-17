@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,50 +22,225 @@
  */
 
 #include "RouteAnalyserEditor.h"
+
+#include "TargetManager.h"
+#include "LatencyRibbonGroup.h"
+#include "RouteAnalyser.h"
 #include "RouteAnalyserWidget.h"
-#include "Core/ICommandManager.h"
-#include "RouteAnalyserComponent.h"
-#include "Pingnoo.h"
+#include "ViewportRibbonGroup.h"
+
 #include <QObject>
-#include <QLabel>
 
-FizzyAde::RouteAnalyser::RouteAnalyserEditor::RouteAnalyserEditor(int contextId)
-{
-    m_contextId = contextId;
-}
+constexpr auto defaultWindowSize = 10.0*60.0;
+constexpr auto viewportSize = 0.5;
 
-QJsonObject FizzyAde::RouteAnalyser::RouteAnalyserEditor::saveConfiguration()
-{
-    return(QJsonObject());
-}
+Nedrysoft::RouteAnalyser::RouteAnalyserEditor::RouteAnalyserEditor() :
+        m_editorWidget(nullptr),
+        m_viewportStart(0),
+        m_viewportEnd(1) {
 
-bool FizzyAde::RouteAnalyser::RouteAnalyserEditor::loadConfiguration(QJsonObject configuration)
-{
-    Q_UNUSED(configuration)
+    auto contextManager = Nedrysoft::Core::IContextManager::getInstance();
 
-    return(false);
-}
-
-QWidget *FizzyAde::RouteAnalyser::RouteAnalyserEditor::widget()
-{
-    static auto visualiserWidget = new FizzyAde::RouteAnalyser::RouteAnalyserWidget();
-
-    static auto commandManager = FizzyAde::Core::ICommandManager::getInstance();
-
-    if (commandManager) {
-        QAction *action = new QAction(Pingnoo::Constants::commandText(Pingnoo::Constants::editCut));
-
-        connect(action, &QAction::triggered, [&] (bool) {
-            qDebug() << "action triggered (route analyser) !";
-        });
-
-        commandManager->registerAction(action, Pingnoo::Constants::editCut, m_contextId);
-
-        FizzyAde::Core::IContextManager::getInstance()->setContext(m_contextId);
-
-        action->setEnabled(false);
-        action->setEnabled(true);
+    if (contextManager) {
+        m_contextId = contextManager->context(Pingnoo::Constants::routeAnalyserContext);
     }
 
-    return(visualiserWidget);
+    Nedrysoft::ComponentSystem::addObject(this);
+}
+
+Nedrysoft::RouteAnalyser::RouteAnalyserEditor::~RouteAnalyserEditor() {
+    Nedrysoft::ComponentSystem::removeObject(this);
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::saveConfiguration() -> QJsonObject {
+    return QJsonObject();
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::loadConfiguration(QJsonObject configuration) -> bool {
+    Q_UNUSED(configuration)
+
+    return false;
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::widget() -> QWidget * {
+    if (!m_editorWidget) {
+        m_editorWidget = new RouteAnalyserWidget(
+                m_pingTarget,
+                m_ipVersion,
+                m_interval,
+                m_pingEngineFactory );
+
+        auto viewportWidget = ComponentSystem::getObject<ViewportRibbonGroup>();
+        double newViewportSize = defaultWindowSize;
+
+        if (viewportWidget) {
+            newViewportSize = viewportWidget->viewportSize();
+        }
+
+        m_editorWidget->setViewportSize(newViewportSize);
+
+        auto favouritesManager = Nedrysoft::RouteAnalyser::TargetManager::getInstance();
+
+        favouritesManager->addRecent(m_pingTarget, m_pingTarget, m_pingTarget, m_ipVersion);
+    }
+
+    return m_editorWidget;
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::setPingEngine(
+        Nedrysoft::Core::IPingEngineFactory *pingEngineFactory ) -> void {
+
+    m_pingEngineFactory = pingEngineFactory;
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::setTarget(QString target) -> void {
+    m_pingTarget = target;
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::displayName() -> QString {
+    return m_pingTarget;
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::setIPVersion(Nedrysoft::Core::IPVersion ipVersion) -> void {
+    m_ipVersion = ipVersion;
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::setInterval(double interval) -> void {
+    m_interval = interval;
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::activated() -> void {
+    auto viewportWidget = ComponentSystem::getObject<ViewportRibbonGroup>();
+    auto latencyWidget = ComponentSystem::getObject<LatencyRibbonGroup>();
+    // unused static auto hasBeenInitialised = false;
+
+    // TODO: the viewport widget needs to be properly sized when switching editors, currently it reverts to the initial
+    // size and when the next data result comes it then changes to the correct size and position.
+
+    if (viewportWidget) {
+        if (m_editorWidget->datasetSize()<m_editorWidget->viewportSize()) {
+            viewportWidget->setViewport(0.0, 1.0);
+            viewportWidget->setViewportEnabled(false);
+        } else {
+            viewportWidget->setViewport(1-viewportSize, 1.0);
+            viewportWidget->setViewportEnabled(true);
+        }
+
+        connect(
+                m_editorWidget,
+                &RouteAnalyserWidget::datasetChanged,
+                this,
+                &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onDatasetChanged);
+
+        connect(
+                viewportWidget,
+                &ViewportRibbonGroup::viewportChanged,
+                this,
+                &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onViewportChanged);
+
+        connect(
+                viewportWidget,
+                &ViewportRibbonGroup::viewportWindowChanged,
+                this,
+                &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onViewportWindowChanged);
+    }
+
+    if (latencyWidget)  {
+        connect(
+                latencyWidget,
+                &LatencyRibbonGroup::valueChanged,
+                this,
+                &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onLatencyValueChanged);
+    }
+}
+
+auto Nedrysoft::RouteAnalyser::RouteAnalyserEditor::deactivated() -> void {
+    auto latencyWidget = ComponentSystem::getObject<LatencyRibbonGroup>();
+    auto viewportWidget = ComponentSystem::getObject<ViewportRibbonGroup>();
+
+    if (latencyWidget) {
+        disconnect(
+                latencyWidget,
+                &LatencyRibbonGroup::valueChanged,
+                this,
+                &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onLatencyValueChanged);
+    }
+
+    if (viewportWidget) {
+        disconnect(
+                viewportWidget,
+                &ViewportRibbonGroup::viewportChanged,
+                this,
+                &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onViewportChanged);
+
+        disconnect(
+                viewportWidget,
+                &ViewportRibbonGroup::viewportWindowChanged,
+                this,
+                &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onViewportWindowChanged);
+    }
+
+    disconnect(
+            m_editorWidget,
+            &RouteAnalyserWidget::datasetChanged,
+            this,
+            &Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onDatasetChanged);
+}
+
+void Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onDatasetChanged(double start, double end) {
+    auto viewportWidget = ComponentSystem::getObject<ViewportRibbonGroup>();
+
+    if (end-start<m_editorWidget->viewportSize()) {
+        auto trimmerSize = ((end-start)/m_editorWidget->viewportSize())*viewportSize;
+
+        viewportWidget->setViewport(qMin(1.0-viewportSize, trimmerSize), 1.0);
+        viewportWidget->setViewportEnabled(false);
+    } else {
+        if (!viewportWidget->isViewportEnabled()) {
+            viewportWidget->setViewport((1-viewportSize), 1.0);
+            m_editorWidget->setViewportPosition(1);
+        }
+
+        viewportWidget->setViewportEnabled(true);
+    }
+
+    viewportWidget->setStartAndEnd(start, end);
+}
+
+void Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onViewportChanged(double start, double end) {
+    if (m_editorWidget) {
+        double viewportSize = 1.0 - ( end - start );
+        double position = start / viewportSize;
+
+        m_editorWidget->setViewportPosition(position);
+    }
+}
+
+void Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onViewportWindowChanged(double size) {
+    auto viewportWidget = ComponentSystem::getObject<ViewportRibbonGroup>();
+
+    if (m_editorWidget) {
+        m_editorWidget->setViewportSize(size);
+
+        if (m_editorWidget->datasetSize()<m_editorWidget->viewportSize()) {
+            auto trimmerSize = (m_editorWidget->datasetSize()/m_editorWidget->viewportSize())*viewportSize;
+
+            m_editorWidget->setViewportPosition(0);
+            viewportWidget->setViewport(qMin(1.0-viewportSize, trimmerSize), 1.0);
+            viewportWidget->setViewportEnabled(false);
+        } else {
+            if (!viewportWidget->isViewportEnabled()) {
+                m_editorWidget->setViewportPosition(1.0);
+                viewportWidget->setViewport((1-viewportSize), 1.0);
+            }
+
+            viewportWidget->setViewportEnabled(true);
+        }
+    }
+}
+
+void Nedrysoft::RouteAnalyser::RouteAnalyserEditor::onLatencyValueChanged(
+        LatencyRibbonGroup::LatencyType type,
+        double value) {
+
 }

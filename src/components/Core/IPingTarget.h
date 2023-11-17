@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,80 +21,83 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_IPINGTARGET_H
-#define FIZZYADE_CORE_IPINGTARGET_H
+#ifndef NEDRYSOFT_CORE_IPINGTARGET_H
+#define NEDRYSOFT_CORE_IPINGTARGET_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
+#include "CoreSpec.h"
 #include "IConfiguration.h"
+
 #include <QHostAddress>
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     class IPingEngine;
 
     /**
-     * Interface definition of a ping target
+     * @brief       The IPingTarget interface describes a host target for a ping engine.
      *
-     * A ping target is used by an IPingEngine to keep track
-     * of destinations to be pinged.
-     *
+     * @details     A ping target is used by an Nedrysoft::Core::IPingEngine to keep track of destinations to be pinged.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IPingTarget :
+            public Nedrysoft::ComponentSystem::IInterface,
+            public Nedrysoft::Core::IConfiguration {
 
-    class FIZZYADE_CORE_DLLSPEC IPingTarget :
-        public FizzyAde::ComponentSystem::IInterface,
-        public FizzyAde::Core::IConfiguration
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::ComponentSystem::IInterface)
-        Q_INTERFACES(FizzyAde::Core::IConfiguration)
+            Q_INTERFACES(Nedrysoft::ComponentSystem::IInterface)
+            Q_INTERFACES(Nedrysoft::Core::IConfiguration)
 
-    public:
-        virtual ~IPingTarget() {}
+        public:
+            /**
+             * @brief       Destroys the IPingEngineFactory.
+             */
+            virtual ~IPingTarget() = default;
 
-        /**
-         * Sets host address for this target
-         *
-         * @param[in] hostAddress the host address to be pinged
-         *
-         */
-        virtual void setHostAddress(QHostAddress hostAddress) = 0;
+            /**
+             * @brief       Sets the target host address.
+             *
+             * @param[in]   hostAddress the host address to be pinged.
+             */
+            virtual auto setHostAddress(QHostAddress hostAddress) -> void = 0;
 
-        /**
-         * Returns the host address for this target
-         *
-         * @return the host address for this target
-         *
-         */
-        virtual QHostAddress hostAddress() = 0;
+            /**
+             * @brief       Returns the host address for this target.
+             *
+             * @returns     the host address for this target.
+             */
+            virtual auto hostAddress() -> QHostAddress = 0;
 
-        /**
-         * Returns the IPingEngine that created this target
-         *
-         * @return the IPingEngine that created this target
-         *
-         */
-        virtual IPingEngine *engine() = 0;
+            /**
+             * @brief       Returns the Nedrysoft::Core::IPingEngine that created this target
+             *
+             * @returns     the Nedrysoft::Core::IPingEngine instance.
+             */
+            virtual auto engine() -> IPingEngine * = 0;
 
-        /**
-         * Returns user data attached to this target
-         *
-         * @return the attached user data
-         *
-         */
-        virtual void *userData() = 0;
+            /**
+             * @brief       Returns the user data attached to this target.
+             *
+             * @returns     the user data.
+             */
+            virtual auto userData() -> void * = 0;
 
-        /**
-         * Attaches user data to this target
-         *
-         * @param[in] data the user data
-         *
-         */
-        virtual void setUserData(void *data) = 0;
+            /**
+             * @brief       Sets the user data attached to this target.
+             *
+             * @param[in]   data the user data.
+             */
+            virtual auto setUserData(void *data) -> void = 0;
+
+            /**
+             * @brief       Returns the TTL of this target.
+             *
+             * @returns     the ttl value.
+             */
+            virtual auto ttl() -> uint16_t = 0;
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IPingTarget, "com.fizzyade.core.IPingTarget/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IPingTarget, "com.nedrysoft.core.IPingTarget/1.0.0")
 
-#endif // FIZZYADE_CORE_IPINGTARGET_H
+#endif // NEDRYSOFT_CORE_IPINGTARGET_H

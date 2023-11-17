@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +22,28 @@
  */
 
 #include "IPAPIGeoIPProviderComponent.h"
-#include "IPAPIGeoIPProvider.h"
-#include "ComponentSystem/IComponentManager.h"
-#include <QDebug>
 
-IPAPIGeoIPProviderComponent::IPAPIGeoIPProviderComponent()
-{
-    m_provider = nullptr;
+#include "ComponentSystem/IComponentManager.h"
+
+IPAPIGeoIPProviderComponent::IPAPIGeoIPProviderComponent() :
+        m_provider(nullptr) {
+
 }
 
-IPAPIGeoIPProviderComponent::~IPAPIGeoIPProviderComponent()
-{
+IPAPIGeoIPProviderComponent::~IPAPIGeoIPProviderComponent() {
+
+}
+
+auto IPAPIGeoIPProviderComponent::initialiseEvent() -> void {
+    m_provider = new Nedrysoft::IPAPIGeoIPProvider::IPAPIGeoIPProvider();
+
+    Nedrysoft::ComponentSystem::addObject(m_provider);
+}
+
+auto IPAPIGeoIPProviderComponent::finaliseEvent() -> void {
     if (m_provider) {
-        FizzyAde::ComponentSystem::removeObject(m_provider);
+        Nedrysoft::ComponentSystem::removeObject(m_provider);
 
         delete m_provider;
     }
-}
-
-void IPAPIGeoIPProviderComponent::initialiseEvent()
-{
-    m_provider = new FizzyAde::IPAPIGeoIPProvider::IPAPIGeoIPProvider();
-
-    FizzyAde::ComponentSystem::addObject(m_provider);
 }

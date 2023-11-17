@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,19 +21,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_STATUSBARMANAGER_H
-#define FIZZYADE_CORE_STATUSBARMANAGER_H
+#ifndef NEDRYSOFT_CORE_STATUSBARMANAGER_H
+#define NEDRYSOFT_CORE_STATUSBARMANAGER_H
 
 #include "IStatusBarManager.h"
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
+    /**
+     * @brief       The StatusBarManager class provides an IStatusBarManager implementation.
+     */
     class StatusBarManager :
-        public IStatusBarManager
-    {
-    public:
-        StatusBarManager();
+            public IStatusBarManager {
+
+        public:
+            /**
+             * @brief       Constructs a status bar manager.
+             */
+            StatusBarManager();
     };
 }
 
-#endif // FIZZYADE_CORE_STATUSBARMANAGER_H
+#endif // NEDRYSOFT_CORE_STATUSBARMANAGER_H

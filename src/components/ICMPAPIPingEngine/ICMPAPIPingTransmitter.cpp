@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,20 +22,22 @@
  */
 
 #include "ICMPAPIPingTransmitter.h"
+
 #include "ICMPAPIPingEngine.h"
-#include <cerrno>
-#include <array>
-#include <fcntl.h>
-#include <cstdint>
-#include <chrono>
-#include <string>
-#include <WinSock2.h>
-#include <iphlpapi.h>
+
 #include <IcmpAPI.h>
-#include <WS2tcpip.h>
-#include <QThread>
-#include <QRandomGenerator>
 #include <QMutexLocker>
+#include <QRandomGenerator>
+#include <QThread>
+#include <WS2tcpip.h>
+#include <WinSock2.h>
+#include <array>
+#include <cerrno>
+#include <chrono>
+#include <cstdint>
+#include <fcntl.h>
+#include <iphlpapi.h>
+#include <string>
 
 using namespace std::chrono_literals;
 
@@ -41,15 +46,14 @@ constexpr auto DefaultReplyTimeout = 3s;
 constexpr auto DefaultTransmitTimeout = 3s;
 constexpr unsigned long PingPayloadLength = 1024;
 
-FizzyAde::Pingnoo::ICMPAPIPingTransmitter::ICMPAPIPingTransmitter(FizzyAde::Pingnoo::ICMPAPIPingEngine *engine)
-{
-    m_engine = engine;
-    m_interval = DefaultTransmitInterval;
-    m_isRunning = false;
+Nedrysoft::Pingnoo::ICMPAPIPingTransmitter::ICMPAPIPingTransmitter(Nedrysoft::Pingnoo::ICMPAPIPingEngine *engine) :
+        m_engine(engine),
+        m_interval(DefaultTransmitInterval),
+        m_isRunning(false) {
+
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingTransmitter::doWork()
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingTransmitter::doWork() -> void {
     HANDLE icmpHandle;
     uint16_t currentSequenceId;
     std::chrono::high_resolution_clock::time_point startTime;
@@ -64,8 +68,7 @@ void FizzyAde::Pingnoo::ICMPAPIPingTransmitter::doWork()
 
     icmpHandle = IcmpCreateFile();
 
-    while(m_isRunning)
-    {
+    while (m_isRunning) {
         startTime = std::chrono::high_resolution_clock::now();
 
         m_targetsMutex.lock();
@@ -82,7 +85,11 @@ void FizzyAde::Pingnoo::ICMPAPIPingTransmitter::doWork()
 
         DWORD returnValue;
 
-        returnValue = IcmpSendEcho2(icmpHandle, waitEvent, nullptr, nullptr, toAddress.sin_addr.S_un.S_addr, dataBuffer.data(), static_cast<WORD>(dataBuffer.length()), nullptr, tempBuffer.data(), static_cast<DWORD>(tempBuffer.length()), std::chrono::duration<DWORD, std::milli>(DefaultTransmitTimeout).count()); // NOLINT(cppcoreguidelines-pro-type-union-access)
+        returnValue = IcmpSendEcho2(icmpHandle, waitEvent, nullptr, nullptr, toAddress.sin_addr.S_un.S_addr,
+                                    dataBuffer.data(), static_cast<WORD>(dataBuffer.length()), nullptr,
+                                    tempBuffer.data(), static_cast<DWORD>(tempBuffer.length()),
+                                    std::chrono::duration<DWORD, std::milli>(
+                                            DefaultTransmitTimeout).count()); // NOLINT(cppcoreguidelines-pro-type-union-access)
 
         if (returnValue != ERROR_IO_PENDING) {
             qWarning() << tr("Error sending icmp.");
@@ -92,7 +99,9 @@ void FizzyAde::Pingnoo::ICMPAPIPingTransmitter::doWork()
             continue;
         }
 
-        returnValue = WaitForMultipleObjectsEx(1, &waitEvent, FALSE, std::chrono::duration<DWORD, std::milli>(DefaultReplyTimeout).count(), TRUE);
+        returnValue = WaitForMultipleObjectsEx(1, &waitEvent, FALSE,
+                                               std::chrono::duration<DWORD, std::milli>(DefaultReplyTimeout).count(),
+                                               TRUE);
 
         CloseHandle(waitEvent);
 
@@ -102,23 +111,22 @@ void FizzyAde::Pingnoo::ICMPAPIPingTransmitter::doWork()
 
         std::chrono::duration<double> diff = std::chrono::high_resolution_clock::now() - startTime;
 
-        if (diff<m_interval)
-            std::this_thread::sleep_for(m_interval-diff);
+        if (diff < m_interval)
+            std::this_thread::sleep_for(m_interval - diff);
 
         currentSequenceId++;
         sampleNumber++;
     }
 }
 
-bool FizzyAde::Pingnoo::ICMPAPIPingTransmitter::setInterval(std::chrono::milliseconds interval)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingTransmitter::setInterval(std::chrono::milliseconds interval) -> bool {
     m_interval = interval;
 
-    return(true);
+    return ( true );
 }
 
 /*
-void FZICMPAPIPingTransmitter::addTarget(FZICMPPingTarget *target)
+void Nedrysoft::Pingnoo::ICMPAPIPingTransmitter::addTarget(FZICMPPingTarget *target)
 {
     QMutexLocker locker(&m_targetsMutex);
 

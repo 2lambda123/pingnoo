@@ -1,8 +1,11 @@
 #
 # Copyright (C) 2020 Adrian Carpenter
 #
-# This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
-# An open source ping path analyser
+# This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+#
+# An open-source cross-platform traceroute analyser.
+#
+# Created by Adrian Carpenter on 27/03/2020.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,22 +23,26 @@
 
 pingnoo_start_executable(Pingnoo)
 
-set(MACOSX_BUNDLE_GUI_IDENTIFIER com.fizzyade.pingnoo)
-#set(MACOSX_BUNDLE_BUNDLE_NAME Pingnoo)
+set(MACOSX_BUNDLE_GUI_IDENTIFIER com.nedrysoft.pingnoo)
 
 pingnoo_add_sources(
+    App.qrc
+    AppIcon.icns
+    AppIcon.rc
+    SplashScreen.cpp
+    SplashScreen.h
+    WindowsIcon.qrc
     main.cpp
-    appicon.rc
-    appicon.icns
-    windowsicon.qrc
 )
 
-pingnoo_use_qt_libraries(Widgets)
+pingnoo_use_qt_libraries(Core Widgets)
 
 pingnoo_use_shared_library(ComponentSystem)
-pingnoo_use_shared_library(AppNap)
 
 pingnoo_add_optional_command("Linux" SetRawCapabilities "Set RAW SOCKET capabilities" ON POST_BUILD COMMAND sudo -n /usr/sbin/setcap cap_net_raw,cap_net_admin=eip ${PINGNOO_BINARY_ROOT}/${pingnooCurrentProjectName})
+
+pingnoo_use_frameworks("Foundation" "Cocoa")
+pingnoo_use_system_libraries(APPLE stdc++ objc)
 
 pingnoo_end_executable()
 

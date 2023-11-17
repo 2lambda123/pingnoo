@@ -1,8 +1,11 @@
 #
 # Copyright (C) 2020 Adrian Carpenter
 #
-# This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
-# An open source ping path analyser
+# This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+#
+# An open-source cross-platform traceroute analyser.
+#
+# Created by Adrian Carpenter on 27/03/2020.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,18 +35,20 @@ pingnoo_add_sources(
     ICMPPingEngineSpec.h
     ICMPPingItem.cpp
     ICMPPingItem.h
-    ICMPPingReceiver.cpp
-    ICMPPingReceiver.h
     ICMPPingTarget.cpp
     ICMPPingTarget.h
     ICMPPingTimeout.cpp
     ICMPPingTimeout.h
     ICMPPingTransmitter.cpp
     ICMPPingTransmitter.h
+    ICMPPingReceiverWorker.cpp
+    ICMPPingReceiverWorker.h
     Utils.h
 )
 
-pingnoo_use_qt_libraries(Network)
+pingnoo_set_description("ICMP ping engine component")
+
+pingnoo_use_qt_libraries(Core Network)
 
 pingnoo_use_component(Core)
 
@@ -51,6 +56,6 @@ pingnoo_use_shared_library(ComponentSystem)
 pingnoo_use_shared_library(ICMPPacket)
 pingnoo_use_shared_library(ICMPSocket)
 
-pingnoo_set_component_metadata("1.0.0" "Ping Engines" "Provides an socket based ICMP ping engine")
+pingnoo_set_component_metadata("Ping Engines" "Provides an socket based ICMP ping engine")
 
 pingnoo_end_component()

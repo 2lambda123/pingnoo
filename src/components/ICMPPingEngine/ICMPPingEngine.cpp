@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,119 +22,158 @@
  */
 
 #include "ICMPPingEngine.h"
-#include "ICMPPingReceiver.h"
-#include "ICMPPingTransmitter.h"
+
 #include "ICMPPingItem.h"
+#include "ICMPPingReceiverWorker.h"
 #include "ICMPPingTarget.h"
 #include "ICMPPingTimeout.h"
+#include "ICMPPingTransmitter.h"
+#include "ICMPSocket/ICMPSocket.h"
+#include "ICMPPacket/ICMPPacket.h"
 #include "Utils.h"
-#include <chrono>
-#include <cstdint>
-#include <QThread>
+
 #include <QMap>
 #include <QMutex>
-#include <QMutexLocker>
+#include <QThread>
+#include <chrono>
+#include <cstdint>
 
 using namespace std::chrono_literals;
 
 constexpr auto DefaultReceiveTimeout = 3s;
 constexpr auto DefaultTerminateThreadTimeout = 5s;
+constexpr auto DefaultTransmitInterval = 2.5s;
 
-using seconds_double = std::chrono::duration<double>;
+class Nedrysoft::ICMPPingEngine::ICMPPingEngineData {
 
-class FizzyAde::ICMPPingEngine::ICMPPingEngineData
-{
+    public:
+        ICMPPingEngineData(Nedrysoft::ICMPPingEngine::ICMPPingEngine *parent) :
+                m_pingEngine(parent),
+                m_transmitterWorker(nullptr),
+                m_timeoutWorker(nullptr),
+                m_transmitterThread(nullptr),
+                m_timeoutThread(nullptr),
+                m_timeout(DefaultReceiveTimeout),
+                m_epoch(std::chrono::system_clock::now()),
+                m_receiverWorker(nullptr) {
 
-public:
-    ICMPPingEngineData(FizzyAde::ICMPPingEngine::ICMPPingEngine *parent)
-    {
-        m_pingEngine = parent;
-        m_receiverWorker = nullptr;
-        m_transmitterWorker = nullptr;
-        m_timeoutWorker = nullptr;
-        m_receiverThread = nullptr;
-        m_transmitterThread = nullptr;
-        m_timeoutThread = nullptr;
-        m_timeout = DefaultReceiveTimeout;
-        m_epoch = std::chrono::system_clock::now();
-    }
+        }
 
-    friend class ICMPPingEngine;
+        friend class ICMPPingEngine;
 
-private:
+    private:
 
-    FizzyAde::ICMPPingEngine::ICMPPingEngine *m_pingEngine;
+        Nedrysoft::ICMPPingEngine::ICMPPingEngine *m_pingEngine;
 
-    FizzyAde::ICMPPingEngine::ICMPPingReceiver *m_receiverWorker;
-    FizzyAde::ICMPPingEngine::ICMPPingTransmitter *m_transmitterWorker;
-    FizzyAde::ICMPPingEngine::ICMPPingTimeout *m_timeoutWorker;
+        Nedrysoft::ICMPPingEngine::ICMPPingTransmitter *m_transmitterWorker;
+        Nedrysoft::ICMPPingEngine::ICMPPingTimeout *m_timeoutWorker;
 
-    QThread *m_receiverThread;
-    QThread *m_transmitterThread;
-    QThread *m_timeoutThread;
+        QThread *m_transmitterThread;
+        QThread *m_timeoutThread;
 
-    QMap<uint32_t, FizzyAde::ICMPPingEngine::ICMPPingItem *> m_pingRequests;
-    QMutex m_requestsMutex;
+        QMap<uint32_t, Nedrysoft::ICMPPingEngine::ICMPPingItem *> m_pingRequests;
+        QMutex m_requestsMutex;
 
-    QList<FizzyAde::ICMPPingEngine::ICMPPingTarget *> m_targetList;
+        QList<Nedrysoft::ICMPPingEngine::ICMPPingTarget *> m_targetList;
 
-    std::chrono::milliseconds m_timeout = {};
+        std::chrono::milliseconds m_timeout = {};
 
-    std::chrono::system_clock::time_point m_epoch;
+        std::chrono::milliseconds m_interval = 2500ms;
 
-    FizzyAde::Core::IPVersion m_version;
+        std::chrono::system_clock::time_point m_epoch;
+
+        Nedrysoft::Core::IPVersion m_version;
+
+        Nedrysoft::ICMPPingEngine::ICMPPingReceiverWorker *m_receiverWorker;
 };
 
-FizzyAde::ICMPPingEngine::ICMPPingEngine::ICMPPingEngine(FizzyAde::Core::IPVersion version) :
-    d(std::make_shared<FizzyAde::ICMPPingEngine::ICMPPingEngineData>(this))
-{
-    d->m_version = version;
+Nedrysoft::ICMPPingEngine::ICMPPingEngine::ICMPPingEngine(Nedrysoft::Core::IPVersion version) :
+        d(std::make_shared<Nedrysoft::ICMPPingEngine::ICMPPingEngineData>(this)) {
 
+    d->m_version = version;
+}
+
+Nedrysoft::ICMPPingEngine::ICMPPingEngine::~ICMPPingEngine() {
+    doStop();
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::addTarget(QHostAddress hostAddress) -> Nedrysoft::Core::IPingTarget * {
+    auto target = new Nedrysoft::ICMPPingEngine::ICMPPingTarget(this, hostAddress);
+
+    d->m_transmitterWorker->addTarget(target);
+
+    return target;
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::addTarget(
+        QHostAddress hostAddress,
+        int ttl ) -> Nedrysoft::Core::IPingTarget * {
+
+    auto target = new Nedrysoft::ICMPPingEngine::ICMPPingTarget(this, hostAddress, ttl);
+
+    d->m_targetList.append(target);
+
+    return target;
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::removeTarget(Nedrysoft::Core::IPingTarget *target) -> bool {
+    Q_UNUSED(target)
+
+    return true;
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::start() -> bool {
     // timeout thread
 
-    d->m_timeoutWorker = new FizzyAde::ICMPPingEngine::ICMPPingTimeout(this);
+    d->m_timeoutWorker = new Nedrysoft::ICMPPingEngine::ICMPPingTimeout(this);
 
     d->m_timeoutThread = new QThread();
 
     d->m_timeoutWorker->moveToThread(d->m_timeoutThread);
 
-    connect(d->m_timeoutThread, &QThread::started, d->m_timeoutWorker, &FizzyAde::ICMPPingEngine::ICMPPingTimeout::doWork);
+    connect(d->m_timeoutThread, &QThread::started, d->m_timeoutWorker,
+            &Nedrysoft::ICMPPingEngine::ICMPPingTimeout::doWork);
 
-    connect(d->m_timeoutWorker, &FizzyAde::ICMPPingEngine::ICMPPingTimeout::result, this, &FizzyAde::ICMPPingEngine::ICMPPingEngine::result);
+    connect(d->m_timeoutWorker, &Nedrysoft::ICMPPingEngine::ICMPPingTimeout::result, this,
+            &Nedrysoft::ICMPPingEngine::ICMPPingEngine::result);
 
     d->m_timeoutThread->start();
 
-    // receiver thread
+    // connect to the receiver thread
 
-    d->m_receiverWorker = new FizzyAde::ICMPPingEngine::ICMPPingReceiver(this);
+    d->m_receiverWorker = Nedrysoft::ICMPPingEngine::ICMPPingReceiverWorker::getInstance();
 
-    d->m_receiverThread = new QThread();
-
-    d->m_receiverWorker->moveToThread(d->m_receiverThread);
-
-    connect(d->m_receiverThread, &QThread::started, d->m_receiverWorker, &FizzyAde::ICMPPingEngine::ICMPPingReceiver::doWork);
-
-    connect(d->m_receiverWorker, &FizzyAde::ICMPPingEngine::ICMPPingReceiver::result, this, &FizzyAde::ICMPPingEngine::ICMPPingEngine::result);
-
-    d->m_receiverThread->start();
+    connect(d->m_receiverWorker,
+            &Nedrysoft::ICMPPingEngine::ICMPPingReceiverWorker::packetReceived,
+            this,
+            &Nedrysoft::ICMPPingEngine::ICMPPingEngine::onPacketReceived);
 
     // transmitter thread
 
-    d->m_transmitterWorker = new FizzyAde::ICMPPingEngine::ICMPPingTransmitter(this);
+    d->m_transmitterWorker = new Nedrysoft::ICMPPingEngine::ICMPPingTransmitter(this);
 
     d->m_transmitterThread = new QThread();
 
     d->m_transmitterWorker->moveToThread(d->m_transmitterThread);
 
-    connect(d->m_transmitterThread, &QThread::started, d->m_transmitterWorker, &FizzyAde::ICMPPingEngine::ICMPPingTransmitter::doWork);
+    d->m_transmitterWorker->setInterval(d->m_interval);
 
-    connect(d->m_transmitterWorker, &FizzyAde::ICMPPingEngine::ICMPPingTransmitter::result, this, &FizzyAde::ICMPPingEngine::ICMPPingEngine::result);
+    for (auto target : d->m_targetList) {
+        d->m_transmitterWorker->addTarget(target);
+    }
+
+    connect(d->m_transmitterThread, &QThread::started, d->m_transmitterWorker,
+            &Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::doWork);
+
+    connect(d->m_transmitterWorker, &Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::result, this,
+            &Nedrysoft::ICMPPingEngine::ICMPPingEngine::result);
 
     d->m_transmitterThread->start();
+
+    return true;
 }
 
-FizzyAde::ICMPPingEngine::ICMPPingEngine::~ICMPPingEngine()
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::doStop() -> bool {
     auto waitTime = std::chrono::duration_cast<std::chrono::milliseconds>(DefaultTerminateThreadTimeout);
 
     if (d->m_transmitterWorker) {
@@ -140,14 +182,6 @@ FizzyAde::ICMPPingEngine::ICMPPingEngine::~ICMPPingEngine()
 
     if (d->m_transmitterThread) {
         d->m_transmitterThread->quit();
-    }
-
-    if (d->m_receiverWorker) {
-        d->m_receiverWorker->m_isRunning = false;
-    }
-
-    if (d->m_receiverThread) {
-        d->m_receiverThread->quit();
     }
 
     if (d->m_timeoutWorker) {
@@ -166,16 +200,8 @@ FizzyAde::ICMPPingEngine::ICMPPingEngine::~ICMPPingEngine()
         }
 
         delete d->m_transmitterThread;
-    }
 
-    if (d->m_receiverThread) {
-        d->m_receiverThread->wait(waitTime.count());
-
-        if (d->m_receiverThread->isRunning()) {
-            d->m_receiverThread->terminate();
-        }
-
-        delete d->m_receiverThread;
+        d->m_transmitterThread = nullptr;
     }
 
     if (d->m_timeoutThread) {
@@ -186,73 +212,43 @@ FizzyAde::ICMPPingEngine::ICMPPingEngine::~ICMPPingEngine()
         }
 
         delete d->m_timeoutThread;
+
+        d->m_timeoutThread = nullptr;
     }
 
     delete d->m_transmitterWorker;
-    delete d->m_receiverWorker;
     delete d->m_timeoutWorker;
 
-    for(auto target : d->m_targetList) {
-        delete target;
-    }
+    d->m_transmitterWorker = nullptr;
+    d->m_timeoutWorker = nullptr;
 
     for (auto request : d->m_pingRequests) {
         delete request;
     }
+
+    d->m_pingRequests.clear();
+
+    return true;
 }
 
-FizzyAde::Core::IPingTarget *FizzyAde::ICMPPingEngine::ICMPPingEngine::addTarget(QHostAddress hostAddress)
-{
-    auto target = new FizzyAde::ICMPPingEngine::ICMPPingTarget(this, hostAddress);
-
-    d->m_transmitterWorker->addTarget(target);
-
-    return(target);
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::stop() -> bool {
+    return doStop();
 }
 
-FizzyAde::Core::IPingTarget *FizzyAde::ICMPPingEngine::ICMPPingEngine::addTarget(QHostAddress hostAddress, int ttl)
-{
-    auto target = new FizzyAde::ICMPPingEngine::ICMPPingTarget(this, hostAddress, ttl);
-
-    d->m_transmitterWorker->addTarget(target);
-
-    d->m_targetList.append(target);
-
-    return(target);
-}
-
-bool FizzyAde::ICMPPingEngine::ICMPPingEngine::removeTarget(FizzyAde::Core::IPingTarget *target)
-{
-    Q_UNUSED(target)
-
-    return(true);
-}
-
-bool FizzyAde::ICMPPingEngine::ICMPPingEngine::start()
-{
-    return(true);
-}
-
-bool FizzyAde::ICMPPingEngine::ICMPPingEngine::stop()
-{
-    return(true);
-}
-
-void FizzyAde::ICMPPingEngine::ICMPPingEngine::addRequest(FizzyAde::ICMPPingEngine::ICMPPingItem *pingItem)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::addRequest(Nedrysoft::ICMPPingEngine::ICMPPingItem *pingItem) -> void {
     QMutexLocker locker(&d->m_requestsMutex);
 
-    auto id = FizzyAde::Utils::fzMake32(pingItem->id(), pingItem->sequenceId());
+    auto id = Nedrysoft::Utils::fzMake32(pingItem->id(), pingItem->sequenceId());
 
     d->m_pingRequests[id] = pingItem;
 }
 
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::removeRequest(
+        Nedrysoft::ICMPPingEngine::ICMPPingItem *pingItem ) -> void {
 
-void FizzyAde::ICMPPingEngine::ICMPPingEngine::removeRequest(FizzyAde::ICMPPingEngine::ICMPPingItem *pingItem)
-{
     QMutexLocker locker(&d->m_requestsMutex);
 
-    auto id = FizzyAde::Utils::fzMake32(pingItem->id(), pingItem->sequenceId());
+    auto id = Nedrysoft::Utils::fzMake32(pingItem->id(), pingItem->sequenceId());
 
     if (d->m_pingRequests.contains(id)) {
         d->m_pingRequests.remove(id);
@@ -261,33 +257,31 @@ void FizzyAde::ICMPPingEngine::ICMPPingEngine::removeRequest(FizzyAde::ICMPPingE
     }
 }
 
-FizzyAde::ICMPPingEngine::ICMPPingItem *FizzyAde::ICMPPingEngine::ICMPPingEngine::getRequest(uint32_t id)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::getRequest(uint32_t id) -> Nedrysoft::ICMPPingEngine::ICMPPingItem * {
     QMutexLocker locker(&d->m_requestsMutex);
 
     if (d->m_pingRequests.contains(id)) {
-        return(d->m_pingRequests[id]);
+        return d->m_pingRequests[id];
     }
 
-    return(nullptr);
+    return nullptr;
 }
 
-bool FizzyAde::ICMPPingEngine::ICMPPingEngine::setInterval(std::chrono::milliseconds interval)
-{
-    return(d->m_transmitterWorker->setInterval(interval));
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::setInterval(std::chrono::milliseconds interval) -> bool {
+    d->m_interval = std::chrono::duration_cast<std::chrono::milliseconds>(interval);
+
+    return true;
 }
 
-bool FizzyAde::ICMPPingEngine::ICMPPingEngine::setTimeout(std::chrono::milliseconds timeout)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::setTimeout(std::chrono::milliseconds timeout) -> bool {
     d->m_timeout = timeout;
 
-    return(true);
+    return true;
 }
 
-void FizzyAde::ICMPPingEngine::ICMPPingEngine::timeoutRequests()
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::timeoutRequests() -> void {
     QMutexLocker locker(&d->m_requestsMutex);
-    QMutableMapIterator<uint32_t, FizzyAde::ICMPPingEngine::ICMPPingItem *> i(d->m_pingRequests);
+    QMutableMapIterator<uint32_t, Nedrysoft::ICMPPingEngine::ICMPPingItem *> i(d->m_pingRequests);
 
     std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
@@ -296,17 +290,25 @@ void FizzyAde::ICMPPingEngine::ICMPPingEngine::timeoutRequests()
 
         auto pingItem = i.value();
 
-        std::chrono::duration<double> diff = startTime-pingItem->transmitTime();
+        std::chrono::duration<double> diff = startTime - pingItem->transmitTime();
 
-        if (diff>d->m_timeout) {
+        if (diff > d->m_timeout) {
             pingItem->lock();
             if (!pingItem->serviced()) {
+                QHostAddress hostAddress;
+
                 pingItem->setServiced(true);
                 pingItem->unlock();
 
-                FizzyAde::Core::PingResult pingResult(pingItem->sampleNumber(), FizzyAde::Core::PingResult::NoReply, QHostAddress(), pingItem->transmitEpoch(), diff, pingItem->target());
+                Nedrysoft::Core::PingResult pingResult(
+                        pingItem->sampleNumber(),
+                        Nedrysoft::Core::PingResult::ResultCode::NoReply,
+                        hostAddress,
+                        pingItem->transmitEpoch(),
+                        diff,
+                        pingItem->target() );
 
-                emit result(pingResult);
+                Q_EMIT result(pingResult);
 
                 i.remove();
 
@@ -318,29 +320,88 @@ void FizzyAde::ICMPPingEngine::ICMPPingEngine::timeoutRequests()
     }
 }
 
-QJsonObject FizzyAde::ICMPPingEngine::ICMPPingEngine::saveConfiguration()
-{
-    return(QJsonObject());
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::saveConfiguration() -> QJsonObject {
+    return QJsonObject();
 }
 
-bool FizzyAde::ICMPPingEngine::ICMPPingEngine::loadConfiguration(QJsonObject configuration)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::loadConfiguration(QJsonObject configuration) -> bool {
     Q_UNUSED(configuration)
 
-    return(false);
+    return false;
 }
 
-void FizzyAde::ICMPPingEngine::ICMPPingEngine::setEpoch(std::chrono::system_clock::time_point epoch)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::setEpoch(std::chrono::system_clock::time_point epoch) -> void {
     d->m_epoch = epoch;
 }
 
-std::chrono::system_clock::time_point FizzyAde::ICMPPingEngine::ICMPPingEngine::epoch()
-{
-    return(d->m_epoch);
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::epoch() -> std::chrono::system_clock::time_point {
+    return d->m_epoch;
 }
 
-FizzyAde::Core::IPVersion FizzyAde::ICMPPingEngine::ICMPPingEngine::version()
-{
-    return(d->m_version);
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::version() -> Nedrysoft::Core::IPVersion {
+    return d->m_version;
+}
+
+void Nedrysoft::ICMPPingEngine::ICMPPingEngine::onPacketReceived(
+        std::chrono::time_point < std::chrono::high_resolution_clock > receiveTime,
+        QByteArray receiveBuffer,
+        QHostAddress receiveAddress ) {
+
+    Nedrysoft::Core::PingResult::ResultCode resultCode = Nedrysoft::Core::PingResult::ResultCode::NoReply;
+
+    auto responsePacket = Nedrysoft::ICMPPacket::ICMPPacket::fromData(
+            receiveBuffer,
+            static_cast<Nedrysoft::ICMPPacket::IPVersion>(this->version()) );
+
+    if (responsePacket.resultCode() == Nedrysoft::ICMPPacket::Invalid) {
+        return;
+    }
+
+    if (responsePacket.resultCode() == Nedrysoft::ICMPPacket::EchoReply) {
+        resultCode = Nedrysoft::Core::PingResult::ResultCode::Ok;
+    }
+
+    if (responsePacket.resultCode() == Nedrysoft::ICMPPacket::TimeExceeded) {
+        resultCode = Nedrysoft::Core::PingResult::ResultCode::TimeExceeded;
+    }
+
+    auto pingItem = this->getRequest(Nedrysoft::Utils::fzMake32(responsePacket.id(), responsePacket.sequence()));
+
+    if (pingItem) {
+        pingItem->lock();
+
+        if (!pingItem->serviced()) {
+            pingItem->setServiced(true);
+            pingItem->unlock();
+
+            std::chrono::duration<double> diff = receiveTime - pingItem->transmitTime();
+
+            auto pingResult = Nedrysoft::Core::PingResult(pingItem->sampleNumber(),
+                                                          resultCode,
+                                                          receiveAddress,
+                                                          pingItem->transmitEpoch(), diff, pingItem->target() );
+
+            Q_EMIT Nedrysoft::ICMPPingEngine::ICMPPingEngine::result(pingResult);
+        } else {
+            pingItem->unlock();
+        }
+
+        this->removeRequest(pingItem);
+
+        delete pingItem;
+    }
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::interval() -> std::chrono::milliseconds {
+    return d->m_transmitterWorker->interval();
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingEngine::targets() -> QList<Nedrysoft::Core::IPingTarget *> {
+    QList<Nedrysoft::Core::IPingTarget *> list;
+
+    for (auto target : d->m_targetList) {
+        list.append(target);
+    }
+
+    return list;
 }

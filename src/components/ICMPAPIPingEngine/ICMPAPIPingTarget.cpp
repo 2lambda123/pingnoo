@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,111 +22,99 @@
  */
 
 #include "ICMPAPIPingTarget.h"
+
 #include "ICMPAPIPingEngine.h"
+
+#include <QHostAddress>
+#include <QRandomGenerator>
 #include <cerrno>
 #include <fcntl.h>
+
 #if defined(Q_OS_UNIX)
-#include <netdb.h>
-#include <cstdint>
-#include <unistd.h>
-#include <utility>
+
 #include <arpa/inet.h>
+#include <arpa/inet.h>
+#include <cstdint>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
+#include <poll.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
-#include <poll.h>
+#include <unistd.h>
+#include <utility>
+
 #elif defined(Q_OS_WIN)
 #include "windows_ip_icmp.h"
 #endif
-#include <QHostAddress>
-#include <QRandomGenerator>
 
 constexpr int TotalTargetSockets = 10;
 
-class FizzyAde::Pingnoo::ICMPAPIPingTargetData
-{
-public:
-    ICMPAPIPingTargetData(FizzyAde::Pingnoo::ICMPAPIPingTarget* parent)
-    {
-        m_pingTarget = parent;
-        for (int i=0;i<TotalTargetSockets;i++)
-            m_socketDescriptors.append(0);
+class Nedrysoft::Pingnoo::ICMPAPIPingTargetData {
+    public:
+        ICMPAPIPingTargetData(Nedrysoft::Pingnoo::ICMPAPIPingTarget *parent) :
+                m_pingTarget(parent),
+                m_engine(nullptr)
+                m_id(( QRandomGenerator::global()->generate() % ( UINT16_MAX - 1 )) + 1),
+                m_userData(nullptr),
+                m_ttl(0),
+                m_currentSocket(0) {
 
-        m_engine = nullptr;
-        m_id = (QRandomGenerator::global()->generate() % (UINT16_MAX-1))+1;
-        m_userData = nullptr;
-        m_ttl = 0;
-        m_currentSocket = 0;
-    }
+            for (int i = 0; i < TotalTargetSockets; i++)
+                m_socketDescriptors.append(0);
+        }
 
-    friend class ICMPAPIPingTarget;
+        friend class ICMPAPIPingTarget;
 
-private:
-    FizzyAde::Pingnoo::ICMPAPIPingTarget* m_pingTarget;
+    private:
+        Nedrysoft::Pingnoo::ICMPAPIPingTarget *m_pingTarget;
 
-    QHostAddress m_hostAddress;
-    FizzyAde::Pingnoo::ICMPAPIPingEngine *m_engine;
+        QHostAddress m_hostAddress;
+        Nedrysoft::Pingnoo::ICMPAPIPingEngine *m_engine;
 #if defined(Q_OS_UNIX)
-    QList<int> m_socketDescriptors;
+        QList<int> m_socketDescriptors;
 #elif defined(Q_OS_WIN)
-    QList<SOCKET> m_socketDescriptors;
+        QList<SOCKET> m_socketDescriptors;
 #endif
-    uint16_t m_id;
-    void *m_userData;
-    unsigned int m_ttl;
-    int m_currentSocket;
+        uint16_t m_id;
+        void *m_userData;
+        unsigned int m_ttl;
+        int m_currentSocket;
 };
 
-FizzyAde::Pingnoo::ICMPAPIPingTarget::ICMPAPIPingTarget(FizzyAde::Pingnoo::ICMPAPIPingEngine *engine, QHostAddress hostAddress, int ttl) :
-    d(std::make_shared<FizzyAde::ICMPAPIPingEngine::ICMPAPIPingTargetData>(this))
-{
-    d->m_hostAddress = std::move(hostAddress);
+Nedrysoft::Pingnoo::ICMPAPIPingTarget::ICMPAPIPingTarget(
+        Nedrysoft::Pingnoo::ICMPAPIPingEngine *engine,
+        const QHostAddress &hostAddress,
+        int ttl) :
+
+            d(std::make_shared<Nedrysoft::ICMPAPIPingEngine::ICMPAPIPingTargetData>(this)) {
+
+    d->m_hostAddress = hostAddress;
     d->m_engine = engine;
     d->m_ttl = ttl;
 }
 
-QObject *FizzyAde::Pingnoo::ICMPAPIPingTarget::asQObject()
-{
-    return(this);
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::asQObject() -> QObject * {
+    return this;
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingTarget::setHostAddress(QHostAddress hostAddress)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::setHostAddress(const QHostAddress &hostAddress) -> void {
     d->m_hostAddress = hostAddress;
 }
 
-QHostAddress FizzyAde::Pingnoo::ICMPAPIPingTarget::hostAddress()
-{
-    return(d->m_hostAddress);
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::hostAddress() -> QHostAddress {
+    return d->m_hostAddress;
 }
 
-FizzyAde::Pingnoo::IPingEngine *FizzyAde::Pingnoo::ICMPAPIPingTarget::engine()
-{
-    return(d->m_engine);
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::engine() -> Nedrysoft::Pingnoo::IPingEngine * {
+    return d->m_engine;
 }
 
-#if defined(Q_OS_UNIX)
-int FizzyAde::Pingnoo::ICMPAPIPingTarget::socketDescriptor()
-#elif defined(Q_OS_WIN)
-SOCKET FizzyAde::Pingnoo::ICMPAPIPingTarget::socketDescriptor()
-#endif
-{
-    if (d->m_socketDescriptors[d->m_currentSocket]==0) {
-#if defined(Q_OS_MACOS)
-        d->m_socketDescriptors[d->m_currentSocket] = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::socketDescriptor() -> SOCKET {
+    if (d->m_socketDescriptors[d->m_currentSocket] == 0) {
 
-        int result = fcntl(d->m_socketDescriptors[d->m_currentSocket], F_SETFL, fcntl(d->m_socketDescriptors[d->m_currentSocket], F_GETFL, 0) | O_NONBLOCK); // NOLINT(cppcoreguidelines-pro-type-vararg)
-
-        if (result<0) {
-            qDebug() << "Error setting non blocking on socket";
-        }
-#elif defined(Q_OS_UNIX)
-        d->m_socketDescriptors[d->m_currentSocket] = socket(AF_INET, SOCK_RAW | SOCK_NONBLOCK, IPPROTO_ICMP);
-#elif defined(Q_OS_WIN)
         d->m_socketDescriptors[d->m_currentSocket] = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
         int socketFlags = 1;
@@ -133,48 +124,39 @@ SOCKET FizzyAde::Pingnoo::ICMPAPIPingTarget::socketDescriptor()
         if (result<0) {
             qDebug() << "Error setting non blocking on socket";
         }
-#endif
 
         if (d->m_ttl)
-            setsockopt(d->m_socketDescriptors[d->m_currentSocket], IPPROTO_IP, IP_TTL, reinterpret_cast<char *>(&d->m_ttl), sizeof(d->m_ttl));
+            setsockopt(d->m_socketDescriptors[d->m_currentSocket], IPPROTO_IP, IP_TTL,
+                       reinterpret_cast<char *>(&d->m_ttl), sizeof(d->m_ttl));
     }
 
-#if defined(Q_OS_UNIX)
-    int socketDescriptor;
-#elif defined(Q_OS_WIN)
     SOCKET socketDescriptor;
-#endif
 
     socketDescriptor = d->m_socketDescriptors[d->m_currentSocket];
 
     d->m_currentSocket = d->m_currentSocket % d->m_socketDescriptors.count();
 
-    return(socketDescriptor);
+    return socketDescriptor;
 }
 
-uint16_t FizzyAde::Pingnoo::ICMPAPIPingTarget::id()
-{
-    return(d->m_id);
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::id() -> uint16_t {
+    return d->m_id;
 }
 
-void *FizzyAde::Pingnoo::ICMPAPIPingTarget::userData()
-{
-    return(d->m_userData);
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::userData() -> void * {
+    return d->m_userData;
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingTarget::setUserData(void *data)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::setUserData(void *data) -> void {
     d->m_userData = data;
 }
 
-QJsonObject FizzyAde::Pingnoo::ICMPAPIPingTarget::saveConfiguration()
-{
-    return(QJsonObject());
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::saveConfiguration() -> QJsonObject {
+    return QJsonObject();
 }
 
-bool FizzyAde::Pingnoo::ICMPAPIPingTarget::loadConfiguration(QJsonObject configuration)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingTarget::loadConfiguration(QJsonObject configuration) -> bool {
     Q_UNUSED(configuration)
 
-    return(false);
+    return false;
 }

@@ -1,8 +1,11 @@
 #
 # Copyright (C) 2020 Adrian Carpenter
 #
-# This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
-# An open source ping path analyser
+# This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+#
+# An open-source cross-platform traceroute analyser.
+#
+# Created by Adrian Carpenter on 27/03/2020.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,14 +23,17 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/pingnoo.cmake)
 
-file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
+add_subdirectory(Core)
+add_subdirectory(HostIPGeoIPProvider)
+add_subdirectory(ICMPAPIPingEngine)
+add_subdirectory(ICMPPingEngine)
+add_subdirectory(PingCommandPingEngine)
+add_subdirectory(PublicIPHostMasker)
+add_subdirectory(RegExHostMasker)
+add_subdirectory(RouteAnalyser)
+add_subdirectory(RouteEngine)
+add_subdirectory(JitterPlot)
+add_subdirectory(Scripting)
 
-foreach(child ${children})
-	if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})
-		if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${child}/CMakeLists.txt)
-			add_subdirectory(${child})
-		endif()
-	endif()
-endforeach()
-
+set(NEDRYSOFT_COMPONENTSYSTEM_COMPONENTVIEWER ON)
 

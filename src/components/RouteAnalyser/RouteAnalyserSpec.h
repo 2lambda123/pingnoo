@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +21,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ROUTEANALYSER_ROUTEANALYSERSPEC_H
-#define FIZZYADE_ROUTEANALYSER_ROUTEANALYSERSPEC_H
+#ifndef NEDRYSOFT_ROUTEANALYSER_ROUTEANALYSERSPEC_H
+#define NEDRYSOFT_ROUTEANALYSER_ROUTEANALYSERSPEC_H
 
-#if defined(FIZZYADE_COMPONENT_ROUTEANALYSER_EXPORT)
-#define FIZZYADE_ROUTEANALYSER_DLLSPEC Q_DECL_EXPORT
+#if defined(NEDRYSOFT_COMPONENT_ROUTEANALYSER_EXPORT)
+#define NEDRYSOFT_ROUTEANALYSER_DLLSPEC Q_DECL_EXPORT
 #else
-#define FIZZYADE_ROUTEANALYSER_DLLSPEC Q_DECL_IMPORT
+#define NEDRYSOFT_ROUTEANALYSER_DLLSPEC Q_DECL_IMPORT
 #endif
 
-#endif // FIZZYADE_ROUTEANALYSER_ROUTEANALYSERSPEC_H
+#endif // NEDRYSOFT_ROUTEANALYSER_ROUTEANALYSERSPEC_H

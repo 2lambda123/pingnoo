@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,51 +21,68 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_HOSTIPGEOAPITPROVIDER_HOSTIGEOPAPIPROVIDER_H
-#define FIZZYADE_HOSTIPGEOAPITPROVIDER_HOSTIGEOPAPIPROVIDER_H
+#ifndef NEDRYSOFT_HOSTIPGEOIPPROVIDER_HOSTIPGEOIPPROVIDER_H
+#define NEDRYSOFT_HOSTIPGEOIPPROVIDER_HOSTIPGEOIPPROVIDER_H
 
 #include "ComponentSystem/IInterface.h"
 #include "Core/IGeoIPProvider.h"
 #include "HostIPGeoIPProviderSpec.h"
+
 #include <QObject>
 #include <QVariantMap>
 
-namespace FizzyAde::HostIPGeoIPProvider
-{
+namespace Nedrysoft::HostIPGeoIPProvider {
     class Cache;
-
     /**
-     * Definition for the built in host masker
-     *
-     * This host marker accepts a regular expression to match the host name
-     * or address and allows the masked output to be generated using capture
-     * groups
-     *
+     * @brief       The HostIPGeoIPProvider class provides a geo lookup using hostip.com.
      */
-
     class HostIPGeoIPProvider :
-        public FizzyAde::Core::IGeoIPProvider
-    {
-        Q_OBJECT
+            public Nedrysoft::Core::IGeoIPProvider {
 
-        Q_INTERFACES(FizzyAde::Core::IGeoIPProvider)
+        private:
+            Q_OBJECT
 
-    public:
-        HostIPGeoIPProvider();
-        ~HostIPGeoIPProvider();
+            Q_INTERFACES(Nedrysoft::Core::IGeoIPProvider)
 
-        /**
-         * @sa IGeoIPProvider
-         */
+        public:
+            /**
+             * @brief       Constructs a HostIPGeoIPProvider.
+             */
+            HostIPGeoIPProvider();
 
-        virtual void lookup(const QString host);
-        virtual void lookup(const QString host, FizzyAde::Core::GeoFunction function);
+            /**
+             * @brief       Destroys the HostIPGeoIPProvider.
+             */
+            ~HostIPGeoIPProvider();
+
+            /**
+             * @brief       Performs a host lookup using IP address or hostname.
+             *
+             * @details     The operation is asynchronous and the result is provided via the
+             *              Nedrysoft::Core::IGeoIPProvider::result signal.
+             *
+             * @see         Nedrysoft::Core::IGeoIPProvider::lookup
+             *
+             * @param[in]   host the host address to be looked up.
+             */
+            auto lookup(const QString host) -> void override;
+
+            /**
+             * @brief       Performs a host lookup using IP address or hostname.
+             *
+             * @details     This overloaded function uses a std::function to obtain the result, this can be
+             *              a callback function or a lambda function.
+             *
+             * @see         Nedrysoft::Core::IGeoIPProvider::lookup
+             *
+             * @param[in]   host the host address to be looked up.
+             * @param[in]   function the function called when a result is available.
+             */
+            auto lookup(const QString host, Nedrysoft::Core::GeoFunction function) -> void override;
 
     private:
-
-    private:
-        FizzyAde::HostIPGeoIPProvider::Cache *m_cache;
+            Nedrysoft::HostIPGeoIPProvider::Cache *m_cache;
     };
 }
 
-#endif // FIZZYADE_HOSTIPGEOAPITPROVIDER_HOSTIGEOPAPIPROVIDER_H
+#endif // NEDRYSOFT_HOSTIPGEOIPPROVIDER_HOSTIPGEOIPPROVIDER_H

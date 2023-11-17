@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,89 +21,95 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ICMPPINGENGINE_ICMPPINGTRANSMITTER_H
-#define FIZZYADE_ICMPPINGENGINE_ICMPPINGTRANSMITTER_H
+#ifndef NEDRYSOFT_ICMPPINGENGINE_ICMPPINGTRANSMITTER_H
+#define NEDRYSOFT_ICMPPINGENGINE_ICMPPINGTRANSMITTER_H
 
 #include "Core/PingResult.h"
-#include <chrono>
-#include <QObject>
-#include <QMutex>
 
-namespace FizzyAde::ICMPPingEngine
-{
+#include <QMutex>
+#include <QObject>
+#include <chrono>
+
+namespace Nedrysoft::ICMPPingEngine {
     class ICMPPingEngine;
     class ICMPPingTarget;
     class ICMPPingItem;
 
     /**
-     * ICMP packet transmitter thread implementation
-     *
-     * Created and used by the ICMP engine, the transmitter thread
-     * creates requests for the associated targets and sends them
-     * at the given period
-     *
+     * @brief       The ICMPPingTransmitter class sends pings to the target (and intermediate nodes) at a prescribed
+     *              interval.
      */
+    class ICMPPingTransmitter :
+            public QObject {
 
-    class ICMPPingTransmitter : public QObject
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
+        public:
 
-        /**
-         * Constructor with engine
-         *
-         * Creates the receiver object and passes in the engine
-         * so that the requests can be tagged to the correct engine
-         *
-         * @param[in] engine the owner engine
-         */
-        ICMPPingTransmitter(FizzyAde::ICMPPingEngine::ICMPPingEngine *engine);
+            /**
+             * @brief       Constructs a new ICMPPingTransmitter for the given engine.
+             *
+             * @param[in]   engine the owner engine.
+             */
+            ICMPPingTransmitter(Nedrysoft::ICMPPingEngine::ICMPPingEngine *engine);
 
-        /**
-         * Sets the interval between a set of pings
-         *
-         * @param[in] interval interval
-         */
-        bool setInterval(std::chrono::milliseconds interval);
+            /**
+             * @brief       Destroys the ICMPPingTransmitter.
+             */
+            ~ICMPPingTransmitter();
 
-        /**
-         * Adds a ping target to the transmitter
-         *
-         * @param[in] target the target to ping
-         */
-        void addTarget(FizzyAde::ICMPPingEngine::ICMPPingTarget *target);
+            /**
+             * @brief       Sets the interval between a set of pings.
+             *
+             * @param[in]   interval the interval.
+             */
+            auto setInterval(std::chrono::milliseconds interval) -> bool;
 
-    private slots:
+            /**
+             * @brief       Returns the ping interval.
+             *
+             * @returns     the interval.
+             */
+            auto interval() -> std::chrono::milliseconds;
 
-        /**
-         * The receiver thread worker
-         */
-        void doWork(void);
+            /**
+             * @brief       Adds a ping target to the transmitter.
+             *
+             * @param[in]   target the target to ping.
+             *
+             */
+            auto addTarget(Nedrysoft::ICMPPingEngine::ICMPPingTarget *target) -> void;
 
-    signals:
+        private:
 
-        /**
-         * Signals when a transmission result is available
-         *
-         * @param[in] result the result
-         */
-        void result(FizzyAde::Core::PingResult result);
+            /**
+             * @brief       The transmitter thread worker.
+             */
+            Q_SLOT void doWork();
 
-        friend class ICMPPingEngine;
+        public:
+            /**
+             * @brief       This signal is emitted when a transmission result is available.
+             *
+             * @param[in]   result the result.
+             */
+            Q_SIGNAL void result(Nedrysoft::Core::PingResult result);
 
-    private:
-        std::chrono::milliseconds m_interval={};                    //! The transmission period in milliseconds
-        FizzyAde::ICMPPingEngine::ICMPPingEngine *m_engine;                //! The engine that owns this transmitter worker
+            friend class ICMPPingEngine;
 
-        QList<FizzyAde::ICMPPingEngine::ICMPPingTarget *> m_targets;       //! List of ping targets
-        QMutex m_targetsMutex;                                      //! Mutex to protect the ping target list
+        private:
+            std::chrono::milliseconds m_interval = {};                        //! The transmission period in milliseconds
+            Nedrysoft::ICMPPingEngine::ICMPPingEngine *m_engine;              //! The engine that owns this transmitter worker
 
-        std::chrono::high_resolution_clock::time_point m_epoch;     //! Transmission epoch
+            QList<Nedrysoft::ICMPPingEngine::ICMPPingTarget *> m_targets;     //! List of ping targets
+            QMutex m_targetsMutex;                                            //! Mutex to protect the ping target list
 
-    protected:
-        bool m_isRunning;                                           //! Thread is running
+            std::chrono::high_resolution_clock::time_point m_epoch;           //! Transmission epoch
+
+        protected:
+            bool m_isRunning;                                                 //! Thread is running
     };
 }
 
-#endif // FIZZYADE_ICMPPINGENGINE_ICMPPINGTRANSMITTER_H
+#endif // NEDRYSOFT_ICMPPINGENGINE_ICMPPINGTRANSMITTER_H

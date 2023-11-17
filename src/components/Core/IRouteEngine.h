@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,54 +21,58 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_IROUTEENGINE_H
-#define FIZZYADE_CORE_IROUTEENGINE_H
+#ifndef NEDRYSOFT_CORE_IROUTEENGINE_H
+#define NEDRYSOFT_CORE_IROUTEENGINE_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
-#include <QObject>
-#include <QHostAddress>
+#include "Core.h"
+#include "CoreSpec.h"
 
-namespace FizzyAde::Core
-{
+#include <QHostAddress>
+#include <QObject>
+
+namespace Nedrysoft::Core {
     typedef QList<QHostAddress> RouteList;
+    class IPingEngineFactory;
 
     /**
-     * Interface definition of a route discovery engine
-     *
-     * Provides the means of discovering the route to a
-     * given host
-     *
+     * @brief       The IRouteEngine interface describes the mechanism of finding the route to a host.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IRouteEngine :
+            public Nedrysoft::ComponentSystem::IInterface {
 
-    class FIZZYADE_CORE_DLLSPEC IRouteEngine :
-        public FizzyAde::ComponentSystem::IInterface
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::ComponentSystem::IInterface)
+            Q_INTERFACES(Nedrysoft::ComponentSystem::IInterface)
 
-    public:
-         virtual ~IRouteEngine() {}
+        public:
+            /**
+             * @brief       Destroys the IRouteEngine.
+             */
+            virtual ~IRouteEngine() = default;
 
-        /**
-         * Starts route discovery for a host
-         *
-         * @param[in] host the host name or address to be traced
-         *
-         */
-        virtual void findRoute(QString host) = 0;
+            /**
+             * @brief       Starts route discovery for a host.
+             *
+             * @notes       Route discovery is a asynchronous operation, the result signal is emitted when the
+             *              discovery is completed.
+             *
+             * @param[in]   engineFactory the ping engine to be used for discoveru.
+             * @param[in]   host the target host name or address.
+             * @param[in]   ipVersion the IP version to be used for discovery.
+             */
+            virtual auto findRoute(Nedrysoft::Core::IPingEngineFactory *engineFactory, QString host, Nedrysoft::Core::IPVersion ipVersion) -> void = 0;
 
-        /**
-         * Signal emitted when the route discovery is completed
-         *
-         * @param[in] result the discovered route
-         *
-         */
-        Q_SIGNAL void result(const QHostAddress &hostAddress, const FizzyAde::Core::RouteList &result);
+            /**
+             * @brief       Signal emitted when the route discovery is completed.
+             *
+             * @param[in]   result the discovered route.
+             */
+            Q_SIGNAL void result(const QHostAddress &hostAddress, const Nedrysoft::Core::RouteList result);
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IRouteEngine, "com.fizzyade.core.IRouteEngine/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IRouteEngine, "com.nedrysoft.core.IRouteEngine/1.0.0")
 
-#endif // FIZZYADE_CORE_IROUTEENGINE_H
+#endif // NEDRYSOFT_CORE_IROUTEENGINE_H

@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,50 +21,76 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_PINGNOO_ICMPAPIPINGENGINEFACTORY_H
-#define FIZZYADE_PINGNOO_ICMPAPIPINGENGINEFACTORY_H
+#ifndef NEDRYSOFT_PINGNOO_ICMPAPIPINGENGINEFACTORY_H
+#define NEDRYSOFT_PINGNOO_ICMPAPIPINGENGINEFACTORY_H
 
-#include "ICMPAPIPingEngineSpec.h"
-#include "Core/IPingEngineFactory.h"
 #include "ComponentSystem/IInterface.h"
+#include "Core/IPingEngineFactory.h"
+#include "ICMPAPIPingEngineSpec.h"
 
-namespace FizzyAde::Pingnoo {
+namespace Nedrysoft::Pingnoo {
 
     class ICMPAPIPingEngineFactoryData;
+
     class ICMPPingEngine;
 
     /**
-     * Factory class for ICMPPingEngine
-     *
-     * Creates instances of ICMPPingEngine
-     *
+     * @brief       The ICMPAPIPingEngineFactory creates instances of the windows ICMPAPI ping engine.
      */
+    class ICMPAPIPingEngineFactory :
+            public Nedrysoft::Core::IPingEngineFactory {
 
-    class ICMPAPIPingEngineFactory : public QObject, public FizzyAde::Core::IPingEngineFactory
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::Core::IPingEngineFactory)
+            Q_INTERFACES(Nedrysoft::Core::IPingEngineFactory)
 
-    public:
-        ICMPAPIPingEngineFactory();
-        ~ICMPAPIPingEngineFactory();
+        public:
+            /**
+             * @brief       Constructs an ICMPAPIPingEngineFactory.
+             */
+            ICMPAPIPingEngineFactory();
 
-        /**
-         * @sa IPingEngineFactory
-         */
-        virtual FizzyAde::Core::IPingEngine *createEngine();
+            /**
+             * @brief       Destroys the ICMPAPIPingEngineFactory.
+             */
+            ~ICMPAPIPingEngineFactory();
 
-        /**
-         * @sa IConfiguration
-         */
-        virtual QJsonObject saveConfiguration();
-        virtual bool loadConfiguration(QJsonObject configuration);
+        public:
+            /**
+             * @brief       Creates a ICMPAPIPingEngine instance.
+             *
+             * @see         Nedrysoft::Core::IPingEngineFactory::createEngine.
+             *
+             * @param[in]   version the IP version of the engine.
+             *
+             * @returns     the new ICMPAPIPingEngine instance.
+             */
+            auto createEngine() -> Nedrysoft::Core::IPingEngine * override;
 
-    protected:
-        std::shared_ptr<ICMPAPIAPIPingEngineFactoryData> d;
+        public:
+            /**
+             * @brief       Saves the configuration to a JSON object.
+             *
+             * @returns     the JSON configuration.
+             */
+            auto saveConfiguration() -> QJsonObject override;
+
+            /**
+             * @brief       Loads the configuration.
+             *
+             * @see         Nedrysoft::Core::IConfiguration::loadConfiguration
+             *
+             * @param[in]   configuration the configuration as JSON object.
+             *
+             * @returns     true if loaded; otherwise false.
+             */
+            auto loadConfiguration(QJsonObject configuration) -> bool override;
+
+        protected:
+            std::shared_ptr<ICMPAPIAPIPingEngineFactoryData> d;
     };
 }
 
 
-#endif // FIZZYADE_PINGNOO_ICMPAPIPINGENGINEFACTORY_H
+#endif // NEDRYSOFT_PINGNOO_ICMPAPIPINGENGINEFACTORY_H

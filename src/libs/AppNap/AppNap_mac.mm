@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +22,20 @@
  */
 
 #include "AppNap.h"
-#import <Foundation/Foundation.h>
-#import <Foundation/NSProcessInfo.h>
-#include <QDebug>
 
-void FizzyAde::AppNap::AppNap::mac_init()
-{
+#import <Foundation/Foundation.h>
+
+void Nedrysoft::AppNap::AppNap::mac_init() {
     m_activity = nil;
     m_count = 0;
 }
 
-void FizzyAde::AppNap::AppNap::mac_prevent(const QString &reason)
-{
+void Nedrysoft::AppNap::AppNap::mac_prevent(const QString &reason) {
     QMutexLocker mutexLocker(&m_mutex);
 
-    if (m_activity==nil) {
+    if (m_activity == nil) {
         if ([[NSProcessInfo processInfo] respondsToSelector:@selector(beginActivityWithOptions:reason:)]) {
-           m_activity = [[NSProcessInfo processInfo] beginActivityWithOptions:NSActivityUserInitiatedAllowingIdleSystemSleep reason: reason.toNSString()];
+            m_activity = [[NSProcessInfo processInfo] beginActivityWithOptions:NSActivityUserInitiatedAllowingIdleSystemSleep reason:reason.toNSString()];
         }
 
         if (m_activity)
@@ -43,15 +43,14 @@ void FizzyAde::AppNap::AppNap::mac_prevent(const QString &reason)
     }
 }
 
-void FizzyAde::AppNap::AppNap::mac_allow()
-{
+void Nedrysoft::AppNap::AppNap::mac_allow() {
     QMutexLocker mutexLocker(&m_mutex);
 
     if (m_count) {
         m_count--;
 
-        if (m_count==0) {
-            if (m_activity!=nil) {
+        if (m_count == 0) {
+            if (m_activity != nil) {
                 [[NSProcessInfo processInfo] endActivity:m_activity];
 
                 m_activity = nil;

@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,69 +21,106 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_COMMAND_H
-#define FIZZYADE_CORE_COMMAND_H
+#ifndef NEDRYSOFT_CORE_COMMAND_H
+#define NEDRYSOFT_CORE_COMMAND_H
 
 #include "ICommand.h"
 #include "IContextManager.h"
+
+#include <QMap>
 #include <QObject>
 #include <QString>
-#include <QMap>
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     class ActionProxy;
 
     /**
-     * Command implementation
+     * @brief       ICommand interface
      *
-     * Provides the implementation of an ICommand for the
-     * CommandManager class
-     *
+     * @details     ICommand represents an actionable command in the system, commands
+     *              are bound to QActions for given contexts, this allows the target of
+     *              the command to change depending on the current context that the application
+     *              is in.
      */
-
     class Command :
-        public FizzyAde::Core::ICommand
-    {
-        Q_OBJECT
+            public Nedrysoft::Core::ICommand {
 
-        Q_INTERFACES(FizzyAde::Core::ICommand)
+        private:
+            Q_OBJECT
 
-    public:
-        Command();
-        ~Command();
+            Q_INTERFACES(Nedrysoft::Core::ICommand)
 
-        /**
-         * @sa ICommand
-         */
-        virtual QAction *action();
-        virtual void setActive(bool state);
-        virtual bool active();
+        public:
+            /**
+             * @brief       Constructs a new Command with the given id.
+             *
+             * @param[in]   id the identifier for this command.
+             */
+            Command(QString id);
 
-    protected:
-        /**
-         * Registers an action to the given contexts
-         *
-         * @param[in] action the action
-         * @param[in] contexts the list of contexts this action is used in
-         */
-        void registerAction(QAction *action, const FizzyAde::Core::ContextList &contexts);
+            /**
+             * @brief       Destroys the Command.
+             */
+            ~Command() override;
 
-        /**
-         * Sets the current context for this command
-         *
-         * @param[in] contextId the context id
-         */
-        void setContext(int contextId);
+        public:
+            /**
+             * @brief       Returns the proxy action.
+             *
+             * @see         Nedrysoft::Core::ICommand::action
+             *
+             * @returns     the proxy action
+             */
+            auto action() -> QAction* override;
 
-        friend class CommandManager;
+            /**
+             * @brief       Sets the active state of the command.
+             *
+             * @see         Nedrysoft::Core::ICommand::setActive
+             *
+             * @param[in]   state true if active; otherwise false.
+             */
+            auto setActive(bool state) -> void override;
 
-    private:
+            /**
+             * @brief       Returns the active state of the command.
+             *
+             * @see         Nedrysoft::Core::ICommand::active
+             *
+             * @returns     true if enabled; otherwise false.
+             */
+             auto active() -> bool override;
 
-        QMap<int, QAction *> m_actions;
+        protected:
+            /**
+             * @brief       Registers an action to the given contexts.
+             *
+             * @note        The command manager becomes the owner of the action.
+             *
+             * @param[in]   action the action.
+             * @param[in]   contexts the list of contexts this action is used in.
+             */
+            auto registerAction(QAction *action, const Nedrysoft::Core::ContextList &contexts) -> void;
 
-        FizzyAde::Core::ActionProxy *m_action;
+            /**
+             * @brief       Sets the current context for this command.
+             *
+             * @brief       If there is a QAction registered with the contextId then it becomes the active
+             *              active, if there is no QAction for the context then the command is disabled.
+             *
+             * @param[in]   contextId the context id.
+             */
+            auto setContext(int contextId) -> void;
+
+            friend class CommandManager;
+
+        private:
+
+            QMap<int, QAction *> m_actions;                        //! Map containing actions stored by context key
+
+            Nedrysoft::Core::ActionProxy *m_action;                //! The proxy action used by the UI
+            QString m_id;                                          //! Unique identifier for the command
     };
 }
 
-#endif // FIZZYADE_CORE_COMMAND_H
+#endif // NEDRYSOFT_CORE_COMMAND_H

@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,43 +21,73 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_IRIBBONBARMANAGER_H
-#define FIZZYADE_CORE_IRIBBONBARMANAGER_H
+#ifndef NEDRYSOFT_CORE_IRIBBONBARMANAGER_H
+#define NEDRYSOFT_CORE_IRIBBONBARMANAGER_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
 #include "Core/IContextManager.h"
+#include "CoreSpec.h"
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
+    class IRibbonPage;
+
     /**
-     * IRibbonBarManager interface
+     * @brief       The IRibbonBarManager interface describes an object that handles the creation of ribbon bars.
      *
-     * IRibbonBarManager handles the management of status bars
-     *
+     * @details     The IRibbonBarManager handles the management of the ribbon bar, it allows pages to be added
+     *              to the ribbon.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IRibbonBarManager :
+            public Nedrysoft::ComponentSystem::IInterface {
 
-    class FIZZYADE_CORE_DLLSPEC IRibbonBarManager :
-        public FizzyAde::ComponentSystem::IInterface
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
-        /**
-         * Returns the IRibbonBarManager instance
-         *
-         * @return the IRibbonBarManager instance
-         */
-        static IRibbonBarManager *getInstance()
-        {
-            return(ComponentSystem::getObject<IRibbonBarManager>());
-        }
+        public:
+            /**
+             * @brief       Returns the IRibbonBarManager instance.
+             *
+             * @returns     the IRibbonBarManager singleton instance.
+             */
+            static auto getInstance() -> IRibbonBarManager * {
+                return ComponentSystem::getObject<IRibbonBarManager>();
+            }
 
-    public:
+            /**
+             * @brief       Adds a page to the ribbon bar.
+             *
+             * @param[in]   title the title of the page.
+             * @param[in]   id the identifier of the page.
+             * @param[in]   order the order of the page, a unit value between 0-1.
+             *
+             * @note        Pages are inserted according to the order parameter, where 0 would be the start,
+             *              0.5 the middle and 1 the end.  Where items have the same order value, position
+             *              is decided alphabetically.
+             *
+             * @returns     the IRibbonPage instance of the page.
+             */
+            virtual auto addPage(QString title, QString id, float order=1) -> Nedrysoft::Core::IRibbonPage * = 0;
 
+            /**
+             * @brief       Returns the page given by the id.
+             *
+             * @param[in]   id the identifier of the page.
+             *
+             * @returns     if it exists, the IRibbonPage instance of the page; otherwise nullptr.
+             */
+            virtual auto page(QString id) -> Nedrysoft::Core::IRibbonPage * = 0;
+
+            /**
+             * @brief       Switches the current page to the one with the given identifier.
+             *
+             * @param[in]   id the identifier of the page.
+             *
+             * @returns     true if page was switched; otherwise false.
+             */
+            virtual auto selectPage(QString id) -> bool = 0;
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IRibbonBarManager, "com.fizzyade.core.IRibbonBarManager/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IRibbonBarManager, "com.nedrysoft.core.IRibbonBarManager/1.0.0")
 
-#endif // FIZZYADE_CORE_IRIBBONBARMANAGER_H
+#endif // NEDRYSOFT_CORE_IRIBBONBARMANAGER_H

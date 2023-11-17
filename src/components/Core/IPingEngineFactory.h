@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,54 +21,86 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_IPINGENGINEFACTORY_H
-#define FIZZYADE_CORE_IPINGENGINEFACTORY_H
+#ifndef NEDRYSOFT_CORE_IPINGENGINEFACTORY_H
+#define NEDRYSOFT_CORE_IPINGENGINEFACTORY_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
+#include "Core.h"
+#include "CoreSpec.h"
 #include "IConfiguration.h"
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     class IPingEngine;
 
-    enum IPVersion
-    {
-        V4 = 4,
-        V6 = 6
-    };
-
     /**
-     * Interface definition of a ping engine
+     * @brief       The IPingEngineFactory Interface describes a factory for Nedrysoft::Core::IPingEngine instances.
      *
-     * An engine implements the logic of transmitting, receiving
-     * and associating replies to ping requests, it then signals
-     * when a ping result is available
-     *
+     * @details     The ping engine factory is responsible for creating instances of ping engines.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IPingEngineFactory :
+            public Nedrysoft::ComponentSystem::IInterface,
+            public Nedrysoft::Core::IConfiguration {
 
-    class FIZZYADE_CORE_DLLSPEC IPingEngineFactory :
-        public FizzyAde::ComponentSystem::IInterface,
-        public FizzyAde::Core::IConfiguration
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::ComponentSystem::IInterface)
-        Q_INTERFACES(FizzyAde::Core::IConfiguration)
+            Q_INTERFACES(Nedrysoft::ComponentSystem::IInterface)
+            Q_INTERFACES(Nedrysoft::Core::IConfiguration)
 
-    public:
-        virtual ~IPingEngineFactory() {}
+        public:
+            /**
+             * @brief       Destroys the IPingEngineFactory.
+             */
+            virtual ~IPingEngineFactory() = default;
 
-        /**
-         * Creates a IPingEngine instance
-         *
-         * @return returns instance
-         *
-         */
-        virtual FizzyAde::Core::IPingEngine *createEngine(FizzyAde::Core::IPVersion version) = 0;
+            /**
+             * @brief       Creates a IPingEngine instance.
+             *
+             * @param[in]   version the IP version of the engine.
+             *
+             * @returns     the new Nedrysoft::Core::IPingEngine instance.
+             */
+            virtual auto createEngine(Nedrysoft::Core::IPVersion version) -> Nedrysoft::Core::IPingEngine * = 0;
+
+            /**
+             * @brief       Returns the descriptive name of the factory.
+             *
+             * @returns     the descriptive name of the ping engine.
+             */
+            virtual auto description() -> QString = 0;
+
+            /**
+             * @brief       Priority of the ping engine.  The priority is 0=lowest, 1=highest.  This allows
+             *              the application to provide a default engine per platform.
+             *
+             * @returns     the priority.
+             */
+             virtual auto priority() -> double = 0;
+
+             /**
+              * @brief      Returns whether the ping engine is available for use.
+              *
+              * @note       Under linux, the ICMP ping engine may not be available if raw sockets cannot
+              *             be created, so this allows us to disable a ping engine from being used.
+              *
+              * @returns    true if available; otherwise false.
+              */
+             virtual auto available() -> bool = 0;
+
+             /**
+              * @brief      Deletes a ping engine that was created by this instance.
+              *
+              * @note       If the ping engine is still running, this function will stop it.
+              *
+              * @param[in]  pingEngine the ping engine to be removed.
+              *
+              * @returns    true if the engine was deleted; otherwise false.
+              */
+             virtual auto deleteEngine(Nedrysoft::Core::IPingEngine *engine) -> bool = 0;
+
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IPingEngineFactory, "com.fizzyade.core.IPingEngineFactory/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IPingEngineFactory, "com.nedrysoft.core.IPingEngineFactory/1.0.0")
 
-#endif // FIZZYADE_CORE_IPINGENGINEFACTORY_H
+#endif // NEDRYSOFT_CORE_IPINGENGINEFACTORY_H

@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,154 +21,162 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ICMPPINGENGINE_ICMPPINGITEM_H
-#define FIZZYADE_ICMPPINGENGINE_ICMPPINGITEM_H
+#ifndef NEDRYSOFT_ICMPPINGENGINE_ICMPPINGITEM_H
+#define NEDRYSOFT_ICMPPINGENGINE_ICMPPINGITEM_H
 
-#include <chrono>
-#include <QObject>
 #include <QMutex>
+#include <QObject>
+#include <chrono>
 
-namespace FizzyAde::ICMPPingEngine
-{
+namespace Nedrysoft::ICMPPingEngine {
     class ICMPPingTarget;
 
     /**
-     * Object used to store information about a tracked request
+     * @brief       The ICMPPingItem class stores information to track requests & responses.
      *
-     * The FZICMPPingTransmitter registers each ping request with the
-     * engine, this class holds the required information to allow
-     * replies to be matched to requests (and timed) and also to allow
-     * timeouts to be discovered.
-     *
+     * @details     The ICMPPingTransmitter instance registers each ping request with the engine, this class holds the
+     *              required information to allow replies to be matched to requests (and timed) and also to allow
+     *              timeouts to be discovered.
      */
+    class ICMPPingItem :
+            public QObject {
 
-    class ICMPPingItem : public QObject
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
-        ICMPPingItem();
-        ~ICMPPingItem();
+        public:
+            /**
+             * @brief       Constructs an ICMPPingItem.
+             */
+            ICMPPingItem();
 
-        /**
-         * Sets the id used in the ping request
-         *
-         * @param[in] id the id to use
-         */
-        void setId(uint16_t id);
+            /**
+             * @brief       Destroys the ICMPPingItem.
+             */
+            ~ICMPPingItem();
 
-        /**
-         * Returns the id used in the ping request
-         *
-         * @return the id
-         */
-        uint16_t id(void);
+            /**
+             * @brief       Sets the id used in the ping request.
+             *
+             * @param[in]   id the id field for this request.
+             */
+            auto setId(uint16_t id) -> void;
 
-        /**
-         * Sets the sequence id used in the ping request
-         *
-         * @param[in] sequence the sequence id to use
-         */
-        void setSequenceId(uint16_t sequence);
+            /**
+             * @brief       Returns the id used in the ping request.
+             *
+             * @returns     id of the request.
+             */
+            auto id(void) -> uint16_t;
 
-        /**
-         * Returns the sequence id used in the ping request
-         *
-         * @return the sequence id
-         */
-        uint16_t sequenceId();
+            /**
+             * @brief       Sets the sequence id used in the ping request.
+             *
+             * @param[in]   sequence the sequence id to use.
+             */
+            auto setSequenceId(uint16_t sequence) -> void;
 
-        /**
-         * Marks the request as being serviced, prevents a packet
-         * being flagged as both replied to and timeout in race
-         * condition situations.
-         *
-         * @param[in] serviced true if serviced, else false
-         */
-        void setServiced(bool serviced);
+            /**
+             * @brief       Returns the sequence id used in the ping request.
+             *
+             * @returns     the sequence id.
+             */
+            auto sequenceId() -> uint16_t;
 
-        /**
-         * Returns the serviced status of the request
-         *
-         * @return true if it has been serviced, else false
-         */
-        bool serviced();
+            /**
+             * @brief       Set whether this request has been serviced.
+             *
+             * @details     Marks the request as being serviced, prevents a packet being flagged as both replied to
+             *              and timeout in race condition situations.
+             *
+             * @param[in]   serviced true if serviced; otherwise false.
+             */
+            auto setServiced(bool serviced) -> void;
 
-        /**
-         * Sets the sample number for this request
-         *
-         * @param[in] sampleNumber the sample number
-         */
-        void setSampleNumber(unsigned long sampleNumber);
+            /**
+             * @brief       Returns the serviced status of the request.
+             *
+             * @returns     true if request has been serviced; otherwise false.
+             */
+            auto serviced() -> bool;
 
-        /**
-         * Returns the sample number for this request
-         *
-         * @return the sample number
-         */
-        unsigned long sampleNumber();
+            /**
+             * @brief       Sets the sample number for this request.
+             *
+             * @param[in]   sampleNumber the sample number.
+             */
+            auto setSampleNumber(unsigned long sampleNumber) -> void;
 
-        /**
-         * Sets the target associated with this request
-         *
-         * @param[in] target the target
-         */
-        void setTarget(FizzyAde::ICMPPingEngine::ICMPPingTarget *target);
+            /**
+             * @brief       Returns the sample number for this request.
+             *
+             * @returns     the sample number.
+             */
+            auto sampleNumber() -> unsigned long;
 
-        /**
-         * Returns the target associated with this request
-         *
-         * @return the request
-         */
-        FizzyAde::ICMPPingEngine::ICMPPingTarget *target();
+            /**
+              * @brief       Sets the target associated with this request.
+              *
+              * @param[in]   target the target.
+              */
+            auto setTarget(Nedrysoft::ICMPPingEngine::ICMPPingTarget *target) -> void;
 
-        /**
-         * Sets the time at which the request was transmitted
-         *
-         * @param[in] time the high resolution clock time
-         * @param[in] epoch the system time
-         */
-        void setTransmitTime(std::chrono::high_resolution_clock::time_point time, std::chrono::system_clock::time_point epoch);
+            /**
+             * @brief       Returns the target associated with this request.
+             *
+             * @returns     the request.
+             */
+            auto target() -> Nedrysoft::ICMPPingEngine::ICMPPingTarget *;
 
-        /**
-         * Returns the time at which the request was transmitted
-         *
-         * @return the high resolution clock time when the request was sent
-         */
-        std::chrono::high_resolution_clock::time_point transmitTime(void);
+            /**
+             * @brief       Sets the time at which the request was transmitted.
+             *
+             * @param[in]   time the high resolution clock time.
+             * @param[in]   epoch the epoch for transmission.
+             */
+            auto setTransmitTime(
+                    std::chrono::high_resolution_clock::time_point time,
+                    std::chrono::system_clock::time_point epoch ) -> void;
 
-        /**
-         * Returns the time at which the request was transmitted
-         *
-         * @return the system clock time when the request was sent
-         */
-        std::chrono::system_clock::time_point transmitEpoch(void);
+            /**
+             * @brief       Returns the time at which the request was transmitted.
+             *
+             * @returns     the high resolution clock time when the request was sent.
+             */
+            auto transmitTime(void) -> std::chrono::high_resolution_clock::time_point;
 
-        /**
-         * Locks the item for exclusive access
-         */
-        void lock(void);
+            /**
+             * @brief       Returns the epoch at which the request was transmitted.
+             *
+             * @returns     the epoch when the request was sent.
+             */
+            auto transmitEpoch() -> std::chrono::system_clock::time_point;
 
-        /**
-         * Locks the item for exclusive access
-         */
-        void unlock(void);
+            /**
+             * @brief       Locks the item for exclusive access.
+             */
+            auto lock(void) -> void;
 
-    private:
-        std::chrono::high_resolution_clock::time_point m_transmitTime;
-        std::chrono::system_clock::time_point m_transmitEpoch;
+            /**
+             * @brief       Unlocks the item that was previous locked.
+             */
+            auto unlock(void) -> void;
 
-        uint16_t m_id;
-        uint16_t m_sequenceId;
+        private:
+            std::chrono::high_resolution_clock::time_point m_transmitTime;
+            std::chrono::system_clock::time_point m_transmitEpoch;
 
-        unsigned long m_sampleNumber;
+            uint16_t m_id;
+            uint16_t m_sequenceId;
 
-        bool m_serviced;
+            bool m_serviced;
 
-        FizzyAde::ICMPPingEngine::ICMPPingTarget *m_target;
+            Nedrysoft::ICMPPingEngine::ICMPPingTarget *m_target;
 
-        QMutex m_mutex;
+            unsigned long m_sampleNumber;
+
+            QMutex m_mutex;
     };
 }
 
-#endif // FIZZYADE_ICMPPINGENGINE_ICMPPINGITEM_H
+#endif // NEDRYSOFT_ICMPPINGENGINE_ICMPPINGITEM_H

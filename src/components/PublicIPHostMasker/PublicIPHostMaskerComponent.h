@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,30 +21,63 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_PUBLICIPHOSTMASKER_PUBLICIPHOSTMASKERCOMPONENT_H
-#define FIZZYADE_PUBLICIPHOSTMASKER_PUBLICIPHOSTMASKERCOMPONENT_H
+#ifndef NEDRYSOFT_PUBLICIPHOSTMASKER_PUBLICIPHOSTMASKERCOMPONENT_H
+#define NEDRYSOFT_PUBLICIPHOSTMASKER_PUBLICIPHOSTMASKERCOMPONENT_H
 
-#include "PublicIPHostMaskerSpec.h"
-#include "ComponentSystem/IComponentInterface.h"
+#include "ComponentSystem/IComponent.h"
 #include "PublicIPHostMasker.h"
+#include "PublicIPHostMaskerSpec.h"
 
-class FIZZYADE_PUBLICIPHOSTMASKER_DLLSPEC PublicIPHostMaskerComponent :
-    public QObject,
-    public FizzyAde::ComponentSystem::IComponentInterface
-{
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID FizzyAdeComponentInterfaceIID FILE "metadata.json")
-    Q_INTERFACES(FizzyAde::ComponentSystem::IComponentInterface)
+namespace Nedrysoft::PublicIPHostMasker {
+    class PublicIPHostMasker;
+    class PublicIPHostMaskerSettingsPage;
+}
 
-public:
-    PublicIPHostMaskerComponent();
-    ~PublicIPHostMaskerComponent();
 
-    virtual void initialiseEvent();
+/**
+ * @brief       The PublicIPHostMaskerComponent class provides a host masker for the clients public ip.
+ */
+class NEDRYSOFT_PUBLICIPHOSTMASKER_DLLSPEC PublicIPHostMaskerComponent :
+        public QObject,
+        public Nedrysoft::ComponentSystem::IComponent {
 
-private:
+    private:
+        Q_OBJECT
+        Q_PLUGIN_METADATA(IID NedrysoftComponentInterfaceIID FILE "metadata.json")
 
-    FizzyAde::PublicIPHostMasker::PublicIPHostMasker *m_hostMasker;
+        Q_INTERFACES(Nedrysoft::ComponentSystem::IComponent)
+
+    public:
+        /**
+         * @brief       Constructs a PublicIPHostMaskerComponent.
+         */
+        PublicIPHostMaskerComponent();
+
+        /**
+         * @brief       Destroys the PublicIPHostMaskerComponent.
+         */
+        ~PublicIPHostMaskerComponent();
+
+        /**
+         * @brief       The initialiseEvent function is called by the component system during loading.
+         *
+         * @details     Called by the component loader after all components have been loaded, called in load order.
+         *
+         * @see         Nedrysoft::ComponentSystem::IComponent::initialiseEvent
+         */
+        auto initialiseEvent() -> void override;
+
+        /**
+         * @brief       The finaliseEvent function is called by the component system during shutdown.
+         *
+         * @see         Nedrysoft::ComponentSystem::IComponent::finaliseEvent
+         */
+        auto finaliseEvent() -> void override;
+
+    private:
+
+        Nedrysoft::PublicIPHostMasker::PublicIPHostMasker *m_hostMasker;
+        Nedrysoft::PublicIPHostMasker::PublicIPHostMaskerSettingsPage *m_settingsPage;
 };
 
-#endif // FIZZYADE_PUBLICIPHOSTMASKER_PUBLICIPHOSTMASKERCOMPONENT_H
+#endif // NEDRYSOFT_PUBLICIPHOSTMASKER_PUBLICIPHOSTMASKERCOMPONENT_H

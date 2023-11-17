@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +22,9 @@
  */
 
 #include "ICMPPingTimeout.h"
+
 #include "ICMPPingEngine.h"
+
 #include <QThread>
 #include <thread>
 
@@ -27,17 +32,16 @@ using namespace std::chrono_literals;
 
 constexpr auto DefaultSleepTime = 1s;
 
-FizzyAde::ICMPPingEngine::ICMPPingTimeout::ICMPPingTimeout(FizzyAde::ICMPPingEngine::ICMPPingEngine *engine)
-{
-    m_engine = engine;
-    m_isRunning = false;
+Nedrysoft::ICMPPingEngine::ICMPPingTimeout::ICMPPingTimeout(Nedrysoft::ICMPPingEngine::ICMPPingEngine *engine) :
+        m_engine(engine),
+        m_isRunning(false) {
+
 }
 
-void FizzyAde::ICMPPingEngine::ICMPPingTimeout::doWork()
-{
+void Nedrysoft::ICMPPingEngine::ICMPPingTimeout::doWork() {
     m_isRunning = true;
 
-    while(m_isRunning) {
+    while (m_isRunning) {
         m_engine->timeoutRequests();
 
         std::this_thread::sleep_for(DefaultSleepTime);

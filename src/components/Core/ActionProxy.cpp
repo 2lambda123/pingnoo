@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +23,14 @@
 
 #include "ActionProxy.h"
 
-FizzyAde::Core::ActionProxy::ActionProxy(QObject *parent) :
-    QAction(parent)
-{
-    m_action = nullptr;
+Nedrysoft::Core::ActionProxy::ActionProxy(QObject *parent) :
+        QAction(parent),
+        m_action(nullptr) {
+
 }
 
-void FizzyAde::Core::ActionProxy::setActive(QAction *action)
-{
-    if (action==m_action) {
+auto Nedrysoft::Core::ActionProxy::setActive(QAction *action) -> void {
+    if (action == m_action) {
         return;
     }
 
@@ -36,11 +38,14 @@ void FizzyAde::Core::ActionProxy::setActive(QAction *action)
 
     m_action = action;
 
+    if (action) {
+        setMenuRole(action->menuRole());
+    }
+
     connectAction();
 }
 
-void FizzyAde::Core::ActionProxy::disconnectAction()
-{
+auto Nedrysoft::Core::ActionProxy::disconnectAction() -> void {
     if (!m_action) {
         return;
     }
@@ -49,8 +54,7 @@ void FizzyAde::Core::ActionProxy::disconnectAction()
     disconnect(this, &QAction::toggled, m_action, &QAction::setChecked);
 }
 
-void FizzyAde::Core::ActionProxy::connectAction()
-{
+auto Nedrysoft::Core::ActionProxy::connectAction() -> void {
     if (!m_action) {
         return;
     }

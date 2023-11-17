@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,121 +21,133 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_IPINGENGINE_H
-#define FIZZYADE_CORE_IPINGENGINE_H
+#ifndef NEDRYSOFT_CORE_IPINGENGINE_H
+#define NEDRYSOFT_CORE_IPINGENGINE_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
+#include "CoreSpec.h"
 #include "IConfiguration.h"
 #include "PingResult.h"
-#include <chrono>
-#include <QHostAddress>
 
-namespace FizzyAde::Core
-{
+#include <QHostAddress>
+#include <chrono>
+
+namespace Nedrysoft::Core {
     class IPingTarget;
 
     /**
-     * Interface definition of a ping engine
+     * @brief       The IPingEngine interface describes a ping engine.
      *
-     * An engine implements the logic of transmitting, receiving
-     * and associating replies to ping requests, it then signals
-     * when a ping result is available
-     *
+     * @details     An engine implements the logic of transmitting, receiving and associating replies to ping requests,
+     *              it then signals when a ping result is available.  The underlying mechanism of handling the pings
+     *              is hidden from the application.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IPingEngine :
+            public Nedrysoft::ComponentSystem::IInterface,
+            public Nedrysoft::Core::IConfiguration {
 
-    class FIZZYADE_CORE_DLLSPEC IPingEngine :
-        public FizzyAde::ComponentSystem::IInterface,
-        public FizzyAde::Core::IConfiguration
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::ComponentSystem::IInterface)
-        Q_INTERFACES(FizzyAde::Core::IConfiguration)
+            Q_INTERFACES(Nedrysoft::ComponentSystem::IInterface)
+            Q_INTERFACES(Nedrysoft::Core::IConfiguration)
 
-    public:
-        virtual ~IPingEngine() {}
+        public:
+            /**
+             * @brief       Destroys the IPingEngine.
+             */
+            virtual ~IPingEngine() = default;
 
-        /**
-         * Sets the measurement interval for this engine instance
-         *
-         * @param[in] interval interval time
-         * @return returns true on success, else false
-         *
-         */
-        virtual bool setInterval(std::chrono::milliseconds interval) = 0;
+            /**
+             * @brief       Sets the measurement interval for this engine instance.
+             *
+             * @param[in]   interval interval time.
+             *
+             * @returns     returns true on success; otherwise false.
+             */
+            virtual auto setInterval(std::chrono::milliseconds interval) -> bool = 0;
 
-        /**
-         * Sets the reply timeout for this engine instance
-         *
-         * @param[in] timeout timeout time
-         * @return returns true on success, else false
-         *
-         */
-        virtual bool setTimeout(std::chrono::milliseconds timeout) = 0;
+            /**
+             * @brief       Returns the interval set on the engine.
+             *
+             * @returns     the interval.
+             */
+            virtual auto interval() -> std::chrono::milliseconds = 0;
 
-        /**
-         * Starts ping operations for this engine instance
-         *
-         * @return returns true on success, else false
-         *
-         */
-        virtual bool start() = 0;
+            /**
+             * @brief       Sets the reply timeout for this engine instance.
+             *
+             * @param[in]   timeout the amount of time before we consider that the packet was lost.
+             *
+             * @returns     true on success; otherwise false.
+             */
+            virtual auto setTimeout(std::chrono::milliseconds timeout) -> bool = 0;
 
-        /**
-         * Stops ping operations for this engine instance
-         *
-         * @return returns true on success, else false
-         *
-         */
-        virtual bool stop() = 0;
+            /**
+             * @brief       Starts ping operations for this engine instance.
+             *
+             * @returns     true on success; otherwise false.
+             */
+            virtual auto start() -> bool = 0;
 
-        /**
-         * Adds a ping target to this engine instance
-         *
-         * @param[in] hostAddress the host address of the ping target
-         * @return returns a pointer to the created ping target
-         *
-         */
-        virtual IPingTarget *addTarget(QHostAddress hostAddress) = 0;
+            /**
+             * @brief       Stops ping operations for this engine instance.
+             *
+             * @returns     true on success; otherwise false.
+             */
+            virtual auto stop() -> bool = 0;
 
-        /**
-         * Adds a ping target to this engine instance
-         *
-         * @param[in] hostAddress the host address of the ping target
-         * @param[in] ttl the time to live to use
-         * @return returns a pointer to the created ping target
-         *
-         */
-        virtual IPingTarget *addTarget(QHostAddress hostAddress, int ttl) = 0;
+            /**
+             * @brief       Adds a ping target to this engine instance.
+             *
+             * @param[in]   hostAddress the host address of the ping target.
+             *
+             * @returns     returns a pointer to the created ping target.
+             */
+            virtual auto addTarget(QHostAddress hostAddress) -> IPingTarget * = 0;
 
-        /**
-         * Removes a ping target from this engine instance
-         *
-         * @param[in] target the ping target to remove
-         * @return returns true on success, else false
-         *
-         */
-        virtual bool removeTarget(IPingTarget *target) = 0;
+            /**
+             * @brief       Adds a ping target to this engine instance.
+             *
+             * @param[in]   hostAddress the host address of the ping target.
+             * @param[in]   ttl the time to live to use.
+             *
+             * @returns     returns a pointer to the created ping target.
+             */
+            virtual auto addTarget(QHostAddress hostAddress, int ttl) -> IPingTarget * = 0;
 
-        /**
-         * Returns the epoch
-         *
-         * @return returns epoch
-         *
-         */
-        virtual std::chrono::system_clock::time_point epoch() = 0;
+            /**
+             * @brief       Removes a ping target from this engine instance.
+             *
+             * @param[in]   target the ping target to remove.
+             *
+             * @returns     true on success; otherwise false.
+             */
+            virtual auto removeTarget(IPingTarget *target) -> bool = 0;
 
-        /**
-         * Signal emitted to indicate the state of a ping request
-         *
-         * @param[in] result the result of a ping request
-         *
-         */
-        Q_SIGNAL void result(FizzyAde::Core::PingResult result);
+            /**
+             * @brief       Gets the epoch for this engine instance.
+             *
+             * @returns     the time epoch
+             */
+            virtual auto epoch() -> std::chrono::system_clock::time_point = 0;
+
+            /**
+             * @brief       Signal emitted to indicate the state of a ping request.
+             *
+             * @param[in]   result the result of a ping request.
+             */
+            Q_SIGNAL void result(Nedrysoft::Core::PingResult result);
+
+            /**
+             * @brief       Returns the list of ping targets for the engine.
+             *
+             * @returns     a QList containing the list of targets.
+             */
+            virtual auto targets() -> QList<Nedrysoft::Core::IPingTarget *> = 0;
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IPingEngine, "com.fizzyade.core.IPingEngine/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IPingEngine, "com.nedrysoft.core.IPingEngine/1.0.0")
 
-#endif // FIZZYADE_CORE_IPINGENGINE_H
+#endif // NEDRYSOFT_CORE_IPINGENGINE_H

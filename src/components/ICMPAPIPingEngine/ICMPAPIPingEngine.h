@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,100 +21,147 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_PINGNOO_ICMPAPIPINGENGINE_H
-#define FIZZYADE_PINGNOO_ICMPAPIPINGENGINE_H
+#ifndef NEDRYSOFT_PINGNOO_ICMPAPIPINGENGINE_H
+#define NEDRYSOFT_PINGNOO_ICMPAPIPINGENGINE_H
 
 #include "ICMPAPIPingEngineSpec.h"
 #include "Core/IPingEngine.h"
 
-namespace FizzyAde::Pingnoo
-{
+namespace Nedrysoft::Pingnoo {
     class ICMPAPIPingEngineData;
+
     class ICMPPingItem;
 
     /**
-     * IPingEngine implementation for Windows ICMP API
-     *
-     * Implements the IPingEngine interface to implement a ping engine
-     * that uses the windows ICMP api
-     *
+     * @brief       The ICMPAPIPingEngine provides An IPingEngine that uses the Windows ICMP API feature.
      */
-
     class ICMPAPIPingEngine :
-        public QObject,
-        public FizzyAde::Core::IPingEngine
-    {
-        Q_OBJECT
+            public Nedrysoft::Core::IPingEngine {
 
-        Q_INTERFACES(FizzyAde::Core::IPingEngine)
+        private:
+            Q_OBJECT
 
-    public:
-        /**
-         * Default constructor
-         */
-        ICMPAPIPingEngine();
+            Q_INTERFACES(Nedrysoft::Core::IPingEngine)
 
-        /**
-         * @sa IPingEngine
-         */
-        virtual bool setInterval(std::chrono::milliseconds interval);
-        virtual bool setTimeout(std::chrono::milliseconds timeout);
+        public:
+            /**
+             * @brief       Constructs an ICMPAPIPingEngine.
+             */
+            ICMPAPIPingEngine();
 
-        virtual bool start();
-        virtual bool stop();
+            /**
+             * @brief       Sets the measurement interval for this engine instance.
+             *
+             * @see         Nedrysoft::Core::IPingEngine::setInterval
+             *
+             * @param[in]   interval interval time.
+             *
+             * @returns     returns true on success; otherwise false.
+             */
+            auto setInterval(std::chrono::milliseconds interval) -> bool override;
 
-        virtual FizzyAde::Core::IPingTarget *addTarget(QHostAddress hostAddress);
-        virtual FizzyAde::Core::IPingTarget *addTarget(QHostAddress hostAddress, int ttl);
-        virtual bool removeTarget(FizzyAde::Core::IPingTarget *target);
-        virtual std::chrono::system_clock::time_point epoch();
+            /**
+             * @brief       Sets the reply timeout for this engine instance.
+             *
+             * @see         Nedrysoft::Core::IPingEngine::setTimeout
+             *
+             * @param[in]   timeout the amount of time before we consider that the packet was lost.
+             *
+             * @returns     true on success; otherwise false.
+             */
+            auto setTimeout(std::chrono::milliseconds timeout) -> bool override;
 
-        /**
-         * @sa IConfiguration
-         */
-        virtual QJsonObject saveConfiguration();
-        virtual bool loadConfiguration(QJsonObject configuration);
+            /**
+             * @brief       Starts ping operations for this engine instance.
+             *
+             * @see         Nedrysoft::Core::IPingEngine::start
+             *
+             * @returns     true on success; otherwise false.
+             */
+            auto start() -> bool override;
 
-    protected:
-        /**
-         * Deletes timed out requests and emits timeout results
-         *
-         * Called from the timeout thread.
-         *
-         * @sa FZICMPPingTimeout
-         */
-        //void timeoutRequests(void);
+            /**
+             * @brief       Stops ping operations for this engine instance.
+             *
+             * @see         Nedrysoft::Core::IPingEngine::stop
+             *
+             * @returns     true on success; otherwise false.
+             */
+            auto stop() -> bool override;
 
-        /**
-         * Adds a ping request to the engine so it can be tracked
-         *
-         * @param[in] pingItem the item to be tracked
-         */
-        //void addRequest(FZICMPPingItem *pingItem);
+            /**
+             * @brief       Adds a ping target to this engine instance.
+             *
+             * @see         Nedrysoft::Core::IPingEngine::addTarget
+             *
+             * @param[in]   hostAddress the host address of the ping target.
+             *
+             * @returns     returns a pointer to the created ping target.
+             */
+            auto addTarget(QHostAddress hostAddress) -> Nedrysoft::Core::IPingTarget * override;
 
-        /**
-         * Removes a tracked request and deletes the item
-         *
-         * @param[in] pingItem the item to be removed
-         */
-        //void removeRequest(FZICMPPingItem *pingItem);
+            /**
+             * @brief       Adds a ping target to this engine instance
+             *
+             * @see         Nedrysoft::Core::IPingEngine::addTarget
+             *
+             * @param[in]   hostAddress the host address of the ping target
+             * @param[in]   ttl the time to live to use
+             *
+             * @returns     returns a pointer to the created ping target
+             */
+            auto addTarget(QHostAddress hostAddress, int ttl) -> Nedrysoft::Core::IPingTarget * override;
 
-        /**
-         * Finds a tracked request by id
-         *
-         * The id is (icmp_id<<16) | icmp_sequence_id
-         *
-         * @param[in] id the request to find
-         * @return returns the request if it exists, otherwise NULL
-         */
-        //FZICMPPingItem *getRequest(uint32_t id);
-    /*
-        friend class FZICMPPingReceiver;
-        friend class FZICMPPingTransmitter;
-        friend class FZICMPPingTimeout;
-    */
-    protected:
-        std::shared_ptr<ICMPAPIPingEngineData> d;
+            /**
+             * @brief       Removes a ping target from this engine instance
+             *
+             * @see         Nedrysoft::Core::IPingEngine::addTarget
+             *
+             * @param[in]   target the ping target to remove
+             *
+             * @returns     true on success; otherwise false.
+             */
+            auto removeTarget(Nedrysoft::Core::IPingTarget *target) -> bool override;
+
+            /**
+             * @brief       Gets the epoch for this engine instance.
+             *
+             * @see         Nedrysoft::Core::IPingEngine::epoch
+             *
+             * @returns     the time epoch
+             */
+            auto epoch() -> std::chrono::system_clock::time_poin overridet;
+
+            /**
+             * @brief       Returns the list of ping targets for the engine.
+             *
+             * @returns     a QList containing the list of targets.
+             */
+            auto targets() -> QList<Nedrysoft::Core::IPingTarget *> override;
+        public:
+            /**
+             * @brief       Saves the configuration to a JSON object.
+             *
+             * @see         Nedrysoft::Core::IConfiguration::saveConfiguration
+             *
+             * @returns     the JSON configuration.
+             */
+            auto saveConfiguration() -> QJsonObject override;
+
+            /**
+             * @brief       Loads the configuration.
+             *
+             * @see         Nedrysoft::Core::IConfiguration::loadConfiguration
+             *
+             * @param[in]   configuration the configuration as JSON object.
+             *
+             * @returns     true if loaded; otherwise false.
+             */
+            auto loadConfiguration(QJsonObject configuration) -> bool override;
+
+        protected:
+            std::shared_ptr<ICMPAPIPingEngineData> d;
     };
 }
 
-#endif // FIZZYADE_PINGNOO_ICMPAPIPINGENGINE_H
+#endif // NEDRYSOFT_PINGNOO_ICMPAPIPINGENGINE_H

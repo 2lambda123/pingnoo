@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,85 +21,74 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_ICOMMAND_H
-#define FIZZYADE_CORE_ICOMMAND_H
+#ifndef NEDRYSOFT_CORE_ICOMMAND_H
+#define NEDRYSOFT_CORE_ICOMMAND_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
-#include <QObject>
-#include <QAction>
+#include "CoreSpec.h"
+
 #include <QAbstractButton>
-#include <QDebug>
+#include <QAction>
+#include <QObject>
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     /**
-     * ICommand interface
+     * @brief       ICommand interface
      *
-     * ICommand represents an actionable command in the system, commands
-     * are bound to QActions for given contexts, this allows the target of
-     * the command to change depending on the current context that the application
-     * is in.
-     *
+     * @details     ICommand represents an actionable command in the system, commands
+     *              are bound to QActions for given contexts, this allows the target of
+     *              the command to change depending on the current context that the application
+     *              is in.
      */
+    class NEDRYSOFT_CORE_DLLSPEC ICommand :
+            public Nedrysoft::ComponentSystem::IInterface {
 
-    class FIZZYADE_CORE_DLLSPEC ICommand :
-        public FizzyAde::ComponentSystem::IInterface
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
-        /**
-         * Returns the proxy action
-         *
-         * @return returns the proxy action
-         *
-         */
-        virtual QAction *action() = 0;
+        public:
+            /**
+             * @brief       Returns the proxy action.
+             *
+             * @returns     the proxy action
+             */
+            virtual auto action() -> QAction * = 0;
 
-        /**
-         * Sets the active state of the command
-         *
-         * @param[in] state true if enabled, else false
-         *
-         */
-        virtual void setActive(bool state) = 0;
+            /**
+             * @brief       Sets the active state of the command.
+             *
+             * @param[in]   state true if active; otherwise false.
+             */
+            virtual auto setActive(bool state) -> void = 0;
 
-        /**
-         * Returns the active state of the command
-         *
-         * @return state if enabled, else false
-         *
-         */
-        virtual bool active() = 0;
+            /**
+             * @brief       Returns the active state of the command.
+             *
+             * @returns     true if enabled; otherwise false.
+             */
+            virtual auto active() -> bool = 0;
 
-    public:
-        /**
-         * Attaches a command to an abstract push button
-         *
-         * Binds to the buttons signals and then emits the appropraite
-         * signals from the push button
-         *
-         * @param[in] widget the abstract button subclassed widget
-         *
-         */
-        virtual void attachToWidget(QAbstractButton *widget)
-        {
-            connect(widget, &QAbstractButton::clicked, [this] (bool) {
-                this->action()->trigger();
-            });
+        public:
+            /**
+             * @brief       Attaches a command to an abstract push button
+             *
+             * @details     Binds to the buttons signals and then emits the appropriate
+             *              signals from the push button
+             *
+             * @param[in]   widget the abstract button subclassed widget
+             */
+            virtual auto attachToWidget(QAbstractButton *widget) -> void {
+                connect(widget, &QAbstractButton::clicked, [this](bool) {
+                    this->action()->trigger();
+                });
 
-            connect(this->action(), &QAction::changed, [this, widget] {
-                widget->setEnabled(this->active());
-                qDebug() << "set widget enabled" << this->active();
-            });
-        }
-
-    public:
-
+                connect(this->action(), &QAction::changed, [this, widget] {
+                    widget->setEnabled(this->active());
+                });
+            }
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::ICommand, "com.fizzyade.core.ICommand/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::ICommand, "com.nedrysoft.core.ICommand/1.0.0")
 
-#endif // FIZZYADE_CORE_ICOMMAND_H
+#endif // NEDRYSOFT_CORE_ICOMMAND_H

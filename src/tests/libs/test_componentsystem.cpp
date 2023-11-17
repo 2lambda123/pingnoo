@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,50 +22,60 @@
  */
 
 #include "test_componentsystem.h"
-#include "catch.hpp"
-#include "ComponentSystem/ComponentLoader.h"
+
 #include "ComponentSystem/Component.h"
+#include "ComponentSystem/ComponentLoader.h"
 #include "ComponentSystem/IComponentManager.h"
 #include "Core/CoreComponent.h"
-#include <QString>
+#include "catch.hpp"
+
 #include <QObject>
+#include <QString>
 
-TEST_CASE("ComponentSystem Tests", "[app][libs][componentsystem]")
-{
+TEST_CASE("ComponentSystem Tests", "[app][libs][componentsystem]") {
     SECTION("check core component") {
-        FizzyAde::ComponentSystem::ComponentLoader componentLoader;
-        QMap<QString, FizzyAde::ComponentSystem::Component *> loadedComponents;
+        Nedrysoft::ComponentSystem::ComponentLoader componentLoader;
+        QMap<QString, Nedrysoft::ComponentSystem::Component *> loadedComponents;
 
-        componentLoader.addComponents("Components");
+        componentLoader.addComponents(PINGNOO_TEST_COMPONENTS_DIR);
 
-        componentLoader.loadComponents();
+        componentLoader.loadComponents([=](Nedrysoft::ComponentSystem::Component *component)->bool {
+            if (component->name()=="Nedrysoft::Core") {
+                return true;
+            }
+
+            return false;
+        });
 
         REQUIRE_MESSAGE(componentLoader.components().count()!=0, "No components were loaded.");
 
-        for (auto component : componentLoader.components())
+        for (auto component : componentLoader.components()) {
             loadedComponents[component->name()] = component;
+        }
 
         REQUIRE_MESSAGE(loadedComponents.contains("Core")==true, "Core component was not loaded.");
-        REQUIRE_MESSAGE(loadedComponents["Core"]->loadError()==0, "Core component loaded with errors.");
+
+        REQUIRE_MESSAGE(loadedComponents["Core"]->loadStatus()!=Nedrysoft::ComponentSystem::ComponentLoader::Loaded,
+                "Core component loaded with errors.");
     }
 
     SECTION("check component manager") {
-        REQUIRE_MESSAGE(FizzyAde::ComponentSystem::allObjects().count()==0, "Objects found in the registry when there should be none.");
+        REQUIRE_MESSAGE (Nedrysoft::ComponentSystem::allObjects().count()==0, "Objects found in the registry when there should be none.");
 
-        FizzyAde::ComponentSystem::addObject(new QObject);
+        Nedrysoft::ComponentSystem::addObject(new QObject);
 
-        REQUIRE_MESSAGE(FizzyAde::ComponentSystem::allObjects().count()==1, "There should be one object in the registry.");
+        REQUIRE_MESSAGE (Nedrysoft::ComponentSystem::allObjects().count()==1, "There should be one object in the registry.");
 
-        REQUIRE_MESSAGE(FizzyAde::ComponentSystem::getObjects<QObject>().count()==1, "There should be one QObject in the registry.");
+        REQUIRE_MESSAGE (Nedrysoft::ComponentSystem::getObjects<QObject>().count()==1, "There should be one QObject in the registry.");
 
-        REQUIRE_MESSAGE(FizzyAde::ComponentSystem::getObject<QObject>()!=nullptr, "Unable to get QObject from the registry.");
+        REQUIRE_MESSAGE (Nedrysoft::ComponentSystem::getObject<QObject>()!=nullptr, "Unable to get QObject from the registry.");
 
-        FizzyAde::ComponentSystem::addObject(new TestObject);
+        Nedrysoft::ComponentSystem::addObject(new TestObject);
 
-        REQUIRE_MESSAGE(FizzyAde::ComponentSystem::allObjects().count()==2, "There should be one two objects in the registry.");;
+        REQUIRE_MESSAGE (Nedrysoft::ComponentSystem::allObjects().count()==2, "There should be one two objects in the registry.");;
 
-        REQUIRE_MESSAGE(FizzyAde::ComponentSystem::getObjects<QObject>().count()==2, "There should be two QObjects in the registry.");
+        REQUIRE_MESSAGE (Nedrysoft::ComponentSystem::getObjects<QObject>().count()==2, "There should be two QObjects in the registry.");
 
-        REQUIRE_MESSAGE(FizzyAde::ComponentSystem::getObjects<TestObject>().count()==1, "There should be a TestObject in the registry.");
+        REQUIRE_MESSAGE (Nedrysoft::ComponentSystem::getObjects<TestObject>().count()==1, "There should be a TestObject in the registry.");
     }
 }

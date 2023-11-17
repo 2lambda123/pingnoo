@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,63 +21,84 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_IGEOIPPROVIDER_H
-#define FIZZYADE_CORE_IGEOIPPROVIDER_H
+#ifndef NEDRYSOFT_CORE_IGEOIPPROVIDER_H
+#define NEDRYSOFT_CORE_IGEOIPPROVIDER_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
+#include "CoreSpec.h"
+
 #include <QHostAddress>
 
-namespace FizzyAde::Core
-{
-    using GeoFunction = std::function <void (const QString &, const QVariantMap &)>;
+namespace Nedrysoft::Core {
+    using GeoFunction = std::function<void(const QString &, const QVariantMap &)>;
 
     /**
-     * Interface definition of a ping target
+     * @brief       Interface definition of a Geo IP provider
      *
-     * A ping target is used by an IPingEngine to keep track
-     * of destinations to be pinged.
-     *
+     * @details     A Geo IP provider gives a location for the given IP address, accuracy of the data will vary
+     *              from provider to provider.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IGeoIPProvider :
+            public Nedrysoft::ComponentSystem::IInterface {
 
-    class FIZZYADE_CORE_DLLSPEC IGeoIPProvider :
-        public FizzyAde::ComponentSystem::IInterface
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::ComponentSystem::IInterface)
+            Q_INTERFACES(Nedrysoft::ComponentSystem::IInterface)
 
-    public:
-        virtual ~IGeoIPProvider() {}
+        public:
+            /**
+             * @brief       Destroys the IGeoIPProvider.
+             */
+            virtual ~IGeoIPProvider() = default;
 
-        /**
-         * Performs a host lookup
-         *
-         * @param[in] host the host address to be looked up
-         *
-         */
-        virtual void lookup(const QString host) = 0;
+            /**
+             * @brief       Performs a host lookup using IP address or hostname.
+             *
+             * @details     The operation is asynchronous and the result is provided via the
+             *              Nedrysoft::Core::IGeoIPProvider::result signal.
+             *
+             * @param[in]   host the host address to be looked up.
+             */
+            virtual auto lookup(const QString host) -> void = 0;
 
-        /**
-         * Performs a host lookup
-         *
-         * @param[in] host the host address to be looked up
-         * @param[in] function callback function
-         *
-         */
-        virtual void lookup(const QString host, FizzyAde::Core::GeoFunction function) = 0;
+            /**
+             * @brief       Performs a host lookup using IP address or hostname.
+             *
+             * @details     This overloaded function uses a std::function to obtain the result, this can be
+             *              a callback function or a lambda function.
+             *
+             * @param[in]   host the host address to be looked up.
+             * @param[in]   function the function called when a result is available.
+             */
+            virtual auto lookup(const QString host, Nedrysoft::Core::GeoFunction function) -> void = 0;
 
-        /**
-         * Signal for result
-         *
-         * @param[out] host the host
-         * @param[out] result the result
-         *
-         */
-        Q_SIGNAL void result(const QString host, const QVariantMap result);
+            /**
+             * @brief       Signals that a result is available.
+             *
+             * @notes       The data returned from the GEO IP provider will vary, however, a IGeoIPProvider is expected
+             *              to produce a variant map with the following named fields (if available).
+             *
+             *              * creationTime
+             *              * country
+             *              * countryCode
+             *              * region
+             *              * regionName
+             *              * city
+             *              * zip
+             *              * lat
+             *              * lon
+             *              * timezone
+             *              * isp
+             *              * org
+             *
+             * @param[out]  host the host that was looked up.
+             * @param[out]  result the result as a QVariantMap
+             */
+            Q_SIGNAL void result(const QString host, const QVariantMap result);
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IGeoIPProvider, "com.fizzyade.core.IGeoIPProvider/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IGeoIPProvider, "com.nedrysoft.core.IGeoIPProvider/1.0.0")
 
-#endif // FIZZYADE_CORE_IGEOIPPROVIDER_H
+#endif // NEDRYSOFT_CORE_IGEOIPPROVIDER_H

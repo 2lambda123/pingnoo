@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,28 +22,31 @@
  */
 
 #include "Cache.h"
+
+#include <QDateTime>
+#include <QDir>
+#include <QJsonArray>
 #include <QSqlDatabase>
+#include <QSqlError>
 #include <QSqlQuery>
 #include <QSqlResult>
-#include <QSqlError>
-#include <QDir>
-#include <QFileInfo>
-#include <QDebug>
 #include <QStandardPaths>
-#include <QDateTime>
-#include <QJsonArray>
+#include <spdlog/spdlog.h>
 
-FizzyAde::HostIPGeoIPProvider::Cache::Cache()
-{
+constexpr auto cacheDatabase = "Nedrysoft::HostIPGeoIPProvider::Cache";
+
+Nedrysoft::HostIPGeoIPProvider::Cache::Cache() {
     auto dataLocations = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation);
 
     if (dataLocations.isEmpty()) {
+        SPDLOG_ERROR(QString("error opening database. (Unable to get AppLocalDataLocation)").toStdString());
+
         return;
     }
 
     auto dbFileInfo = QFileInfo(dataLocations.at(0), "host-ip-cache.db");
 
-    auto database = QSqlDatabase::addDatabase("QSQLITE", QString("FizzyAde::HostIPGeoIPProvider::Cache"));
+    auto database = QSqlDatabase::addDatabase("QSQLITE", cacheDatabase);
 
     database.setDatabaseName(dbFileInfo.absoluteFilePath());
 
@@ -48,17 +54,21 @@ FizzyAde::HostIPGeoIPProvider::Cache::Cache()
         auto dir = QDir();
 
         if (!dir.mkpath(dbFileInfo.dir().absolutePath())) {
+            SPDLOG_ERROR(QString("error opening database. (%1)").arg(database.lastError().text()).toStdString());
+
             return;
         }
     }
 
     if (!database.open()) {
+        SPDLOG_ERROR(QString("error opening database. (%1)").arg(database.lastError().text()).toStdString());
+
         return;
     }
 
     QSqlQuery query(database);
 
-    auto result = query.exec(R"(CREATE TABLE ip (
+    auto result = query.exec(R"(CREATE TABLE IF NOT EXISTS ip (
                                   id INTEGER PRIMARY KEY,
                                   name TEXT,
                                   creationTime INTEGER,
@@ -69,18 +79,18 @@ FizzyAde::HostIPGeoIPProvider::Cache::Cache()
     ))");
 
     if (!result) {
-        qDebug() << "error creating table." << query.lastError().text();
+        SPDLOG_WARN(QString("error creating table. (%1)").arg(query.lastError().text()).toStdString());
     }
+
+    query.finish();
 }
 
-FizzyAde::HostIPGeoIPProvider::Cache::Cache::~Cache()
-{
-    QSqlDatabase::removeDatabase("FizzyAde::HostIPGeoIPProvider::Cache");
+Nedrysoft::HostIPGeoIPProvider::Cache::Cache::~Cache() {
+    QSqlDatabase::removeDatabase(cacheDatabase);
 }
 
-void FizzyAde::HostIPGeoIPProvider::Cache::add(QJsonObject object)
-{
-    QSqlDatabase database = QSqlDatabase::database("FizzyAde::HostIPGeoIPProvider::Cache");
+auto Nedrysoft::HostIPGeoIPProvider::Cache::add(QJsonObject object) -> void {
+    QSqlDatabase database = QSqlDatabase::database(cacheDatabase);
     QSqlQuery query(database);
 
     query.prepare("INSERT INTO ip (name, creationTime, country, countryCode, city) "
@@ -95,14 +105,16 @@ void FizzyAde::HostIPGeoIPProvider::Cache::add(QJsonObject object)
     auto result = query.exec();
 
     if (!result) {
-        qDebug() << "error adding record." << query.lastError().text();
+        SPDLOG_WARN(QString("error adding record. (%1)").arg(query.lastError().text()).toStdString());
     }
+
+    query.finish();
 }
 
-bool FizzyAde::HostIPGeoIPProvider::Cache::find(const QString &name, QJsonObject &object)
-{
-    QSqlDatabase database = QSqlDatabase::database("FizzyAde::HostIPGeoIPProvider::Cache");
+auto Nedrysoft::HostIPGeoIPProvider::Cache::find(const QString &name, QJsonObject &object) -> bool {
+    QSqlDatabase database = QSqlDatabase::database(cacheDatabase);
     QSqlQuery query(database);
+    bool queryResult = false;
 
     query.prepare("SELECT * FROM ip WHERE name=:name");
     query.bindValue(":name", name);
@@ -114,9 +126,11 @@ bool FizzyAde::HostIPGeoIPProvider::Cache::find(const QString &name, QJsonObject
             object["countryCode"] = QJsonValue::fromVariant(query.value("countryCode"));
             object["city"] = QJsonValue::fromVariant(query.value("city"));
 
-            return(true);
+            queryResult = true;
         }
     }
 
-    return(false);
+    query.finish();
+
+    return queryResult;
 }

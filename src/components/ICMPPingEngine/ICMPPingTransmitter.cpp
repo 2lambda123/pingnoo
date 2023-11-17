@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,35 +22,37 @@
  */
 
 #include "ICMPPingTransmitter.h"
-#include "ICMPPingEngine.h"
-#include "ICMPPingTarget.h"
-#include "ICMPPingItem.h"
+
 #include "ICMPPacket/ICMPPacket.h"
+#include "ICMPPingEngine.h"
+#include "ICMPPingItem.h"
+#include "ICMPPingTarget.h"
 #include "ICMPSocket/ICMPSocket.h"
-#include <cerrno>
-#include <fcntl.h>
-#include <cstdint>
-#include <chrono>
+
 #include <QThread>
-#include <QRandomGenerator>
-#include <QMutexLocker>
 #include <QtEndian>
+#include <chrono>
+#include <cstdint>
+#include <random>
+#include <spdlog/spdlog.h>
 #include <thread>
 
 using namespace std::chrono_literals;
 
 constexpr auto DefaultTransmitInterval = 10s;
 
-FizzyAde::ICMPPingEngine::ICMPPingTransmitter::ICMPPingTransmitter(FizzyAde::ICMPPingEngine::ICMPPingEngine *engine)
-{
-    m_engine = engine;
-    m_interval = DefaultTransmitInterval;
-    m_isRunning = false;
+Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::ICMPPingTransmitter(Nedrysoft::ICMPPingEngine::ICMPPingEngine *engine) :
+        m_interval(DefaultTransmitInterval),
+        m_engine(engine),
+        m_isRunning(false) {
+
 }
 
-void FizzyAde::ICMPPingEngine::ICMPPingTransmitter::doWork()
-{
-    struct icmp icmp_request = {};
+Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::~ICMPPingTransmitter() {
+    //qDeleteAll(m_targets);
+}
+
+void Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::doWork() {
     unsigned long sampleNumber = 0;
 
     m_isRunning = true;
@@ -56,17 +61,25 @@ void FizzyAde::ICMPPingEngine::ICMPPingTransmitter::doWork()
 
     QThread::currentThread()->setPriority(QThread::HighPriority);
 
-    auto currentSequenceId = static_cast<uint16_t>(QRandomGenerator::global()->generate());
+    std::random_device randomDevice;
+    std::mt19937 mt(randomDevice());
+    std::uniform_int_distribution<uint16_t> dist(0, UINT16_MAX);
 
-    while(m_isRunning) {
+    auto currentSequenceId = dist(mt);
+
+    while (m_isRunning) {
+        if (!m_targets.isEmpty()) {
+            SPDLOG_TRACE("Preparing ping set to " + m_targets.last()->hostAddress().toString().toStdString());
+        }
+
         auto startTime = std::chrono::high_resolution_clock::now();
 
         m_targetsMutex.lock();
 
-        for(auto target : m_targets) {
+        for (auto target : m_targets) {
             auto socket = target->socket();
 
-            auto pingItem = new FizzyAde::ICMPPingEngine::ICMPPingItem();
+            auto pingItem = new Nedrysoft::ICMPPingEngine::ICMPPingItem();
 
             pingItem->setTarget(target);
             pingItem->setId(target->id());
@@ -77,12 +90,23 @@ void FizzyAde::ICMPPingEngine::ICMPPingTransmitter::doWork()
 
             pingItem->setTransmitTime(std::chrono::high_resolution_clock::now(), std::chrono::system_clock::now());
 
-            auto buffer = FizzyAde::ICMPPacket::ICMPPacket::pingPacket(target->id(), currentSequenceId, 52, target->hostAddress(), static_cast<FizzyAde::ICMPPacket::IPVersion>(m_engine->version()));
+            auto buffer = Nedrysoft::ICMPPacket::ICMPPacket::pingPacket(
+                    target->id(),
+                    currentSequenceId,
+                    52,
+                    target->hostAddress(),
+                    static_cast<Nedrysoft::ICMPPacket::IPVersion>(m_engine->version()) );
 
             auto result = socket->sendto(buffer, target->hostAddress());
 
-            if (result!=sizeof(icmp_request)) {
-                // transmit error
+            SPDLOG_TRACE(
+                    QString("Sent ping to %1 (TTL=%2, Result=%3)")
+                    .arg(target->hostAddress().toString())
+                    .arg(socket->ttl()).arg(result)
+                    .toStdString() );
+
+            if (result != buffer.length()) {
+                SPDLOG_ERROR("Unable to send packet to "+target->hostAddress().toString().toStdString());
             }
         }
 
@@ -90,8 +114,8 @@ void FizzyAde::ICMPPingEngine::ICMPPingTransmitter::doWork()
 
         auto diff = std::chrono::high_resolution_clock::now() - startTime;
 
-        if (diff<m_interval) {
-            std::this_thread::sleep_for(m_interval-diff);
+        if (diff < m_interval) {
+            std::this_thread::sleep_for(m_interval - diff);
         }
 
         currentSequenceId++;
@@ -99,16 +123,18 @@ void FizzyAde::ICMPPingEngine::ICMPPingTransmitter::doWork()
     }
 }
 
-bool FizzyAde::ICMPPingEngine::ICMPPingTransmitter::setInterval(std::chrono::milliseconds interval)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::setInterval(std::chrono::milliseconds interval) -> bool {
     m_interval = interval;
 
-    return(true);
+    return true;
 }
 
-void FizzyAde::ICMPPingEngine::ICMPPingTransmitter::addTarget(FizzyAde::ICMPPingEngine::ICMPPingTarget *target)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::addTarget(Nedrysoft::ICMPPingEngine::ICMPPingTarget *target) -> void {
     QMutexLocker locker(&m_targetsMutex);
 
     m_targets.append(target);
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingTransmitter::interval() -> std::chrono::milliseconds {
+    return m_interval;
 }

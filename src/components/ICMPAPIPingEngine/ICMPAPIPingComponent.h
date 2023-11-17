@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,24 +21,45 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_PINGNOO_ICMPAPIPINGCOMPONENT_H
-#define FIZZYADE_PINGNOO_ICMPAPIPINGCOMPONENT_H
+#ifndef NEDRYSOFT_PINGNOO_ICMPAPIPINGCOMPONENT_H
+#define NEDRYSOFT_PINGNOO_ICMPAPIPINGCOMPONENT_H
 
+#include "ComponentSystem/IComponent.h"
 #include "ICMPAPIPingEngineSpec.h"
-#include "ComponentSystem/IComponentInterface.h"
 
-class FIZZYADE_PINGNOO_ICMPAPIPINGENGINE_DLLSPEC ICMPAPIPingComponent : public QObject, public FizzyAde::ComponentSystem::IComponentInterface
-{
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID FizzyAdeComponentInterfaceIID FILE "metadata.json")
-    Q_INTERFACES(FizzyAde::ComponentSystem::IComponentInterface)
+/**
+ * @brief       The ICMPAPIPingComponent class provides a ping engine for the Windows ICMPAPI api.
+ */
+class NEDRYSOFT_PINGNOO_ICMPAPIPINGENGINE_DLLSPEC ICMPAPIPingComponent :
+        public QObject, public Nedrysoft::ComponentSystem::IComponent {
 
-public:
-    ICMPAPIPingComponent();
-    ~ICMPAPIPingComponent();
+    private:
+        Q_OBJECT
 
-    virtual void initialiseEvent();
+        Q_PLUGIN_METADATA(IID NedrysoftComponentInterfaceIID FILE "metadata.json")
+
+        Q_INTERFACES(Nedrysoft::ComponentSystem::IComponent)
+
+    public:
+        /**
+         * @brief       Constructs an ICMPAPIPingComponent.
+         */
+        ICMPAPIPingComponent();
+
+        /**
+         * @brief       Destroys the ICMPAPIPingComponent.
+         */
+        ~ICMPAPIPingComponent();
+
+        /**
+         * @brief       initialiseEvent
+         *
+         * @details     Called by the component loader after all components have been loaded, called in load order.
+         *
+         * @see         Nedrysoft::ComponentSystem::IComponent::initialiseEvent
+         */
+        auto initialiseEvent() -> void override;
 
 };
 
-#endif // FIZZYADE_PINGNOO_ICMPAPIPINGCOMPONENT_H
+#endif // NEDRYSOFT_PINGNOO_ICMPAPIPINGCOMPONENT_H

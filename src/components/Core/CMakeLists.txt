@@ -1,8 +1,11 @@
 #
 # Copyright (C) 2020 Adrian Carpenter
 #
-# This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
-# An open source ping path analyser
+# This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+#
+# An open-source cross-platform traceroute analyser.
+#
+# Created by Adrian Carpenter on 27/03/2020.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,51 +24,81 @@
 pingnoo_start_component()
 
 pingnoo_add_sources(
-    mainwindow.cpp
-    mainwindow.h
-    mainwindow.ui
-    RibbonIcons.qrc
-    CoreComponent.cpp
-    CoreComponent.h
-    CoreSpec.h
-    ICore.h
-    IConfiguration.h
-    IEditor.h
-    IGeoIPProvider.h
-    IHostMasker.h
-    IPingEngine.h
-    IPingEngineFactory.h
-    IPingTarget.h
-    IRouteEngine.h
-    IRibbonBarManager.h
-    IStatusBarManager.h
-    ICommand.h
-    ICommandManager.h
-    IMenu.h
-    IContextManager.h
-    PingResult.cpp
-    PingResult.h
+    AboutDialog.cpp
+    AboutDialog.h
+    AboutDialog.ui
+    ActionProxy.cpp
+    ActionProxy.h
+    Command.cpp
+    Command.h
+    CommandManager.cpp
+    CommandManager.h
     ContextManager.cpp
     ContextManager.h
     Core.cpp
     Core.h
-    CommandManager.cpp
-    CommandManager.h
-    Command.cpp
-    Command.h
-    ActionProxy.cpp
-    ActionProxy.h
+    CoreComponent.cpp
+    CoreComponent.h
+    CoreSpec.h
+    EditorManager.cpp
+    EditorManager.h
+    EditorManagerTabWidget.cpp
+    EditorManagerTabWidget.h
+    HostMaskerSettingsPage.cpp
+    HostMaskerSettingsPage.h
+    HostMaskerSettingsPageWidget.cpp
+    HostMaskerSettingsPageWidget.h
+    HostMaskerSettingsPageWidget.ui
+    ICommand.h
+    ICommandManager.h
+    IConfiguration.h
+    IContextManager.h
+    ICore.h
+    IEditor.h
+    IEditorManager.h
+    IGeoIPProvider.h
+    IHostMasker.h
+    IHostMaskerSettingsPage.h
+    ILogger.h
+    IMenu.h
+    IPingEngine.h
+    IPingEngineFactory.h
+    IPingTarget.h
+    IRibbonBarManager.h
+    IRibbonGroup.h
+    IRibbonPage.h
+    IRouteEngine.h
+    IRouteEngineFactory.h
+    IStatusBarManager.h
+    MainWindow.cpp
+    MainWindow.h
+    MainWindow.ui
     Menu.cpp
     Menu.h
+    PingResult.cpp
+    PingResult.h
+    RibbonBarManager.cpp
+    RibbonBarManager.h
+    RibbonGroup.cpp
+    RibbonGroup.h
+    RibbonIcons.qrc
+    RibbonPage.cpp
+    RibbonPage.h
     StatusBarManager.cpp
     StatusBarManager.h
+    fonts.qrc
+    icons.qrc
 )
 
-pingnoo_use_qt_libraries(Network Widgets)
+pingnoo_set_description("Core application support component")
 
+pingnoo_use_qt_libraries(Core Network Widgets)
+
+pingnoo_use_shared_library(SettingsDialog)
 pingnoo_use_shared_library(ComponentSystem)
 pingnoo_use_shared_library(Ribbon)
+pingnoo_use_shared_library(FontAwesome)
 
-pingnoo_set_component_metadata("1.0.0" "Core" "Provides core services to components.")
+pingnoo_set_component_metadata("Core" "Provides core services to components.")
 
 pingnoo_end_component()

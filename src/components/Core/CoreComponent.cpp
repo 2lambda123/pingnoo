@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,34 +22,81 @@
  */
 
 #include "CoreComponent.h"
-#include "ComponentSystem/IComponentManager.h"
-#include "PingResult.h"
-#include "ContextManager.h"
+
 #include "CommandManager.h"
+#include "ContextManager.h"
 #include "Core.h"
+#include "HostMaskerSettingsPage.h"
+#include "IPingEngineFactory.h"
+#include "IRibbonBarManager.h"
+#include "IRibbonPage.h"
 #include "IRouteEngine.h"
-#include <QDebug>
+#include "PingResult.h"
+#include "Pingnoo.h"
 
-void CoreComponent::initialiseEvent()
-{
-    qRegisterMetaType<FizzyAde::Core::PingResult>("FizzyAde::Core::PingResult");
-    qRegisterMetaType<FizzyAde::Core::RouteList>("FizzyAde::Core::RouteList");
-    qRegisterMetaType<QHostAddress>("QHostAddress");
+CoreComponent::CoreComponent() :
+        m_core(nullptr),
+        m_contextManager(nullptr),
+        m_commandManager(nullptr) {
 
-    FizzyAde::ComponentSystem::addObject(new FizzyAde::Core::Core());
-    FizzyAde::ComponentSystem::addObject(new FizzyAde::Core::ContextManager());
-    FizzyAde::ComponentSystem::addObject(new FizzyAde::Core::CommandManager());
+}
+CoreComponent::~CoreComponent() {
 }
 
-void CoreComponent::initialisationFinishedEvent()
-{
-    auto core = FizzyAde::ComponentSystem::getObject<FizzyAde::Core::Core>();
+auto CoreComponent::initialiseEvent() -> void {
+    qRegisterMetaType<Nedrysoft::Core::PingResult>("Nedrysoft::Core::PingResult");
+    qRegisterMetaType<Nedrysoft::Core::RouteList>("Nedrysoft::Core::RouteList");
+    qRegisterMetaType<QHostAddress>("QHostAddress");
+    qRegisterMetaType<Nedrysoft::Core::IPingEngineFactory *>("Nedrysoft::Core::IPingEngineFactory *");
+    qRegisterMetaType<Nedrysoft::Core::IPVersion>("Nedrysoft::Core::IPVersion");
 
-    connect(FizzyAde::Core::IContextManager::getInstance(), &FizzyAde::Core::IContextManager::contextChanged, [&] (int newContext, int oldContext) {
-        Q_UNUSED(oldContext)
-        FizzyAde::Core::ICommandManager::getInstance()->setContext(newContext);
-    });
+    m_core = new Nedrysoft::Core::Core();
+    m_contextManager = new Nedrysoft::Core::ContextManager();
+    m_commandManager = new Nedrysoft::Core::CommandManager();
+    m_hostMaskerSettingsPage = new Nedrysoft::Core::HostMaskerSettingsPage();
 
-    qDebug() << "core opened";
+    Nedrysoft::ComponentSystem::addObject(m_core);
+    Nedrysoft::ComponentSystem::addObject(m_contextManager);
+    Nedrysoft::ComponentSystem::addObject(m_commandManager);
+    Nedrysoft::ComponentSystem::addObject(m_hostMaskerSettingsPage);
+
+    auto ribbonBarManager = Nedrysoft::Core::IRibbonBarManager::getInstance();
+
+    if (ribbonBarManager) {
+        /*auto page =*/ ribbonBarManager->addPage(tr("Host Masking"), Pingnoo::Constants::ribbonHostMaskingPage);
+
+        //page->addGroup("My Group", "com.c", new QWidget());
+    }
+
+}
+
+auto CoreComponent::initialisationFinishedEvent() -> void {
+    auto core = Nedrysoft::ComponentSystem::getObject<Nedrysoft::Core::Core>();
+
+    connect(Nedrysoft::Core::IContextManager::getInstance(), &Nedrysoft::Core::IContextManager::contextChanged,
+            [&](int newContext, int oldContext) {
+                Q_UNUSED(oldContext)
+
+                Nedrysoft::Core::ICommandManager::getInstance()->setContext(newContext);
+            });
+
     core->open();
+}
+
+auto CoreComponent::finaliseEvent() -> void {
+    if (m_hostMaskerSettingsPage) {
+        delete m_hostMaskerSettingsPage;
+    }
+
+    if (m_core) {
+        delete m_core;
+    }
+
+    if (m_contextManager) {
+        delete m_contextManager;
+    }
+
+    if (m_commandManager) {
+        delete m_commandManager;
+    }
 }

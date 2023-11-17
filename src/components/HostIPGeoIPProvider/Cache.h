@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,28 +21,45 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_HOSTIPGEOIPPROVIDER_CACHE_H
-#define FIZZYADE_HOSTIPGEOIPPROVIDER_CACHE_H
+#ifndef NEDRYSOFT_HOSTIPGEOIPPROVIDER_CACHE_H
+#define NEDRYSOFT_HOSTIPGEOIPPROVIDER_CACHE_H
 
-#include <QSqlDatabase>
 #include <QJsonObject>
+#include <QSqlDatabase>
 
-namespace FizzyAde::HostIPGeoIPProvider
-{
-    class Cache
-    {
-    public:
-        Cache();
-        ~Cache();
+namespace Nedrysoft::HostIPGeoIPProvider {
+    /**
+     * @brief       The Cache class provides a basic cache for IP results to prevent too many requests being made.
+     */
+    class Cache {
+        public:
+            /**
+             * @brief       Constructs a Cache.
+             */
+            Cache();
 
-        void add(QJsonObject object);
-        bool find(const QString &name, QJsonObject &object);
+            /**
+             * @brief       Destroys the Cache.
+             */
+            ~Cache();
 
-    protected:
+            /**
+             * @brief       Adds a lookup result to the cache.
+             *
+             * @param[in]   The cache JSON result object.
+             */
+            auto add(QJsonObject object) -> void;
 
-    private:
-
+            /**
+             * @brief       Check if a host has a cache entry.
+             *
+             * @param[in]   host the host to check.
+             * @param[out]  object the JSON object containing the host information.
+             *
+             * @returns     returns true if cached; otherwise false.
+             */
+            auto find(const QString &name, QJsonObject &object) -> bool;
     };
 }
 
-#endif // FIZZYADE_HOSTIPGEOIPPROVIDER_CACHE_H
+#endif // NEDRYSOFT_HOSTIPGEOIPPROVIDER_CACHE_H

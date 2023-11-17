@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,63 +21,55 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ICMPPINGENGINE_ICMPPINGTIMEOUT_H
-#define FIZZYADE_ICMPPINGENGINE_ICMPPINGTIMEOUT_H
+#ifndef NEDRYSOFT_ICMPPINGENGINE_ICMPPINGTIMEOUT_H
+#define NEDRYSOFT_ICMPPINGENGINE_ICMPPINGTIMEOUT_H
 
 #include "Core/PingResult.h"
 
-namespace FizzyAde::ICMPPingEngine
-{
+namespace Nedrysoft::ICMPPingEngine {
     class ICMPPingEngine;
 
     /**
-     * ICMP packet timeout thread implementation
-     *
-     * Created and used by the ICMP engine, the timeout thread
-     * calls the engine periodically to detect timed out requests
-     *
+     * @brief       The ICMPPingTimeout class monitors packets and signals if a timeout occurred.
      */
+    class ICMPPingTimeout :
+            public QObject {
 
-    class ICMPPingTimeout : public QObject
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
+        public:
 
-        /**
-         * Constructor with engine
-         *
-         * Creates the receiver object and passes in the engine
-         * so that the requests can be tagged to the correct engine
-         *
-         * @param[in] engine the owner engine
-         */
-        ICMPPingTimeout(FizzyAde::ICMPPingEngine::ICMPPingEngine *engine);
+            /**
+             * @brief       Constructs a new ICMPPingTimeout with the given ping engine.
+             *
+             * @details     Creates the receiver object and passes in the engine so that the requests can be tagged
+             *              to the correct engine.
+             *
+             * @param[in]   engine the owner engine.
+             */
+            ICMPPingTimeout(Nedrysoft::ICMPPingEngine::ICMPPingEngine *engine);
 
-    public slots:
+            /**
+             * @brief       The timeout thread worker.
+             */
+            Q_SLOT void doWork();
 
-        /**
-         * The receiver thread worker
-         */
-        void doWork(void);
+            /**
+             * @brief       This signal is emitted when a timeout has been detected.
+             *
+             * @param[in]   result the timeout result.
+             */
+            Q_SIGNAL void result(Nedrysoft::Core::PingResult result);
 
-    signals:
+            friend class ICMPPingEngine;
 
-        /**
-         * Signals when a timeout result is available
-         *
-         * @param[in] result the result
-         */
-        void result(FizzyAde::Core::PingResult result);
+        private:
+            Nedrysoft::ICMPPingEngine::ICMPPingEngine *m_engine;    //! The engine that owns this timeout worker
 
-        friend class ICMPPingEngine;
-
-    private:
-        FizzyAde::ICMPPingEngine::ICMPPingEngine *m_engine;    //! The engine that owns this timeout worker
-
-    protected:
-        bool m_isRunning;                               //! Thread is running
+        protected:
+            bool m_isRunning;                               //! Thread is running
     };
 }
 
-#endif // FIZZYADE_ICMPPINGENGINE_ICMPPINGTIMEOUT_H
+#endif // NEDRYSOFT_ICMPPINGENGINE_ICMPPINGTIMEOUT_H

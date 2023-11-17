@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,83 +21,61 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_PINGNOO_ICMPAPIPINGTRANSMITTER_H
-#define FIZZYADE_PINGNOO_ICMPAPIPINGTRANSMITTER_H
+#ifndef NEDRYSOFT_PINGNOO_ICMPAPIPINGTRANSMITTER_H
+#define NEDRYSOFT_PINGNOO_ICMPAPIPINGTRANSMITTER_H
 
-#include "ICMPAPIPingEngineSpec.h"
 #include "Core/PingResult.h"
-#include <QObject>
-#include <QMutex>
+#include "ICMPAPIPingEngineSpec.h"
 
-namespace FizzyAde::Pingnoo
-{
+#include <QMutex>
+#include <QObject>
+
+namespace Nedrysoft::Pingnoo {
     class ICMPAPIPingEngine;
 
     /**
-     * ICMPAPI packet transmitter thread implementation
+     * @brief       The ICMPAPIPingTransmitter class provides a thread for transmitting ICMP packets.
      *
-     * Created and used by the ICMPAPI engine, the transmitter thread
-     * creates requests for the associated targets and sends them
-     * at the given period
-     *
+     * @details     and used by the ICMPAPI engine, the transmitter thread creates requests for the associated
+     *              targets and sends them at the given period
      */
+    class ICMPAPIPingTransmitter :
+            public QObject {
 
-    class ICMPAPIPingTransmitter : public QObject
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-    public:
+        public:
 
-        /**
-         * Constructor with engine
-         *
-         * Creates the receiver object and passes in the engine
-         * so that the requests can be tagged to the correct engine
-         *
-         * @param[in] engine the owner engine
-         */
-        ICMPAPIPingTransmitter(FizzyAde::Pingnoo::ICMPAPIPingEngine *engine);
+            /**
+             * @brief       Constructs a new ping transmitter with the given engine.
+             *
+             * @param[in]   engine the owner engine.
+             */
+            ICMPAPIPingTransmitter(Nedrysoft::Pingnoo::ICMPAPIPingEngine *engine);
 
-        /**
-         * Sets the interval between a set of pings
-         *
-         * @param[in] interval interval
-         */
-        bool setInterval(std::chrono::milliseconds interval);
+            /**
+             * @brief       Sets the interval between a set of pings.
+             *
+             * @param[in]   interval the interval.
+             */
+            auto setInterval(std::chrono::milliseconds interval) -> bool;
 
-        /**
-         * Adds a ping target to the transmitter
-         *
-         * @param[in] target the target to ping
-         */
-        //void addTarget(FZICMPPingTarget *target);
+            /**
+             * @brief       The transmitter thread worker.
+             */
+            Q_SLOT void doWork(void);
 
-        friend class ICMPAPIPingEngine;
+            friend class ICMPAPIPingEngine;
 
-    private slots:
+        private:
+            std::chrono::milliseconds m_interval = {};          //! The transmission period in milliseconds
+            Nedrysoft::Pingnoo::ICMPAPIPingEngine *m_engine;    //! The engine that owns this transmitter worker
 
-        /**
-         * The receiver thread worker
-         */
-        void doWork(void);
-
-    signals:
-
-        /**
-         * Signals when a transmission result is available
-         *
-         * @param[in] result the result
-         */
-        void result(FizzyAde::Core::PingResult result);
-
-    private:
-        std::chrono::milliseconds m_interval = {};      //! The transmission period in milliseconds
-        FizzyAde::Pingnoo::ICMPAPIPingEngine *m_engine; //! The engine that owns this transmitter worker
-
-        //QList<FZICMPPingTarget *> m_targets;            //! List of ping targets
-        QMutex m_targetsMutex;                          //! Mutex to protect the ping target list
-        bool m_isRunning;                               //! Whether thread is running
+            //QList<Nedrysoft::Pingnoo::ICMPAPIPingEngine *> m_targets;              //! List of ping targets
+            QMutex m_targetsMutex;                              //! Mutex to protect the ping target list
+            bool m_isRunning;                                   //! Whether thread is running
     };
 }
 
-#endif // FIZZYADE_PINGNOO_ICMPAPIPINGTRANSMITTER_H
+#endif // NEDRYSOFT_PINGNOO_ICMPAPIPINGTRANSMITTER_H

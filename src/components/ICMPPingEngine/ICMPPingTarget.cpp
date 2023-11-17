@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,118 +21,113 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ICMPPingTarget.h"
 #include "ICMPPingEngine.h"
+#include "ICMPPingTarget.h"
 #include "ICMPSocket/ICMPSocket.h"
-#include <cerrno>
-#include <fcntl.h>
+
 #include <QHostAddress>
-#include <QRandomGenerator>
+#include <cassert>
+#include <random>
 
-constexpr int TotalTargetSockets = 10;
+class Nedrysoft::ICMPPingEngine::ICMPPingTargetData {
+    public:
+        ICMPPingTargetData(Nedrysoft::ICMPPingEngine::ICMPPingTarget *parent) :
+                m_pingTarget(parent),
+                m_engine(nullptr),
+                m_socket(nullptr),
+                m_userData(nullptr),
+                m_ttl(0) {
 
-class FizzyAde::ICMPPingEngine::ICMPPingTargetData
-{
-public:
-    ICMPPingTargetData(FizzyAde::ICMPPingEngine::ICMPPingTarget* parent)
-    {
-        m_pingTarget = parent;
+            std::random_device randomDevice;
+            std::mt19937 mt(randomDevice());
+            std::uniform_int_distribution<uint16_t> dist(1.0, UINT16_MAX-1);
 
-        for (auto i=0;i<TotalTargetSockets;i++) {
-            m_socketList.append(nullptr);
+            m_id = dist(mt);
         }
 
-        m_engine = nullptr;
-        m_id = (QRandomGenerator::global()->generate() % (UINT16_MAX-1))+1;
-        m_userData = nullptr;
-        m_ttl = 0;
-        m_currentSocket = 0;
-    }
+        friend class ICMPPingTarget;
 
-    friend class ICMPPingTarget;
+    private:
+        Nedrysoft::ICMPPingEngine::ICMPPingTarget *m_pingTarget;
 
-private:
-    FizzyAde::ICMPPingEngine::ICMPPingTarget* m_pingTarget;
-
-    QHostAddress m_hostAddress;
-    FizzyAde::ICMPPingEngine::ICMPPingEngine *m_engine;
-    QList<FizzyAde::ICMPSocket::ICMPSocket *> m_socketList;
-    uint16_t m_id;
-    void *m_userData;
-    int m_ttl;
-    int m_currentSocket;
+        QHostAddress m_hostAddress;
+        Nedrysoft::ICMPPingEngine::ICMPPingEngine *m_engine;
+        Nedrysoft::ICMPSocket::ICMPSocket *m_socket;
+        uint16_t m_id;
+        void *m_userData;
+        int m_ttl;
 };
 
-FizzyAde::ICMPPingEngine::ICMPPingTarget::ICMPPingTarget(FizzyAde::ICMPPingEngine::ICMPPingEngine *engine, QHostAddress hostAddress, int ttl) :
-    d(std::make_shared<FizzyAde::ICMPPingEngine::ICMPPingTargetData>(this))
-{
+Nedrysoft::ICMPPingEngine::ICMPPingTarget::ICMPPingTarget(
+        Nedrysoft::ICMPPingEngine::ICMPPingEngine *engine,
+        QHostAddress hostAddress,
+        int ttl) :
+
+            d(std::make_shared<Nedrysoft::ICMPPingEngine::ICMPPingTargetData>(this)) {
+
     d->m_hostAddress = std::move(hostAddress);
     d->m_engine = engine;
     d->m_ttl = ttl;
 }
 
-FizzyAde::ICMPPingEngine::ICMPPingTarget::~ICMPPingTarget()
-{
-    for(auto socket : d->m_socketList) {
-        delete socket;
+Nedrysoft::ICMPPingEngine::ICMPPingTarget::~ICMPPingTarget() {
+    if (d->m_socket) {
+        delete d->m_socket;
     }
+
+    d.reset();
 }
 
-void FizzyAde::ICMPPingEngine::ICMPPingTarget::setHostAddress(QHostAddress hostAddress)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::setHostAddress(QHostAddress hostAddress) -> void {
     d->m_hostAddress = hostAddress;
 }
 
-QHostAddress FizzyAde::ICMPPingEngine::ICMPPingTarget::hostAddress()
-{
-    return(d->m_hostAddress);
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::hostAddress() -> QHostAddress {
+    return d->m_hostAddress;
 }
 
-FizzyAde::Core::IPingEngine *FizzyAde::ICMPPingEngine::ICMPPingTarget::engine()
-{
-    return(d->m_engine);
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::engine() -> Nedrysoft::Core::IPingEngine * {
+    return d->m_engine;
 }
 
-FizzyAde::ICMPSocket::ICMPSocket *FizzyAde::ICMPPingEngine::ICMPPingTarget::socket()
-{
-    if (d->m_socketList[d->m_currentSocket]==0) {
-        if (d->m_hostAddress.protocol()==QAbstractSocket::IPv4Protocol) {
-            d->m_socketList[d->m_currentSocket] = FizzyAde::ICMPSocket::ICMPSocket::createWriteSocket(d->m_ttl, FizzyAde::ICMPSocket::V4);
-        } else if (d->m_hostAddress.protocol()==QAbstractSocket::IPv6Protocol) {
-            d->m_socketList[d->m_currentSocket] = FizzyAde::ICMPSocket::ICMPSocket::createWriteSocket(d->m_ttl, FizzyAde::ICMPSocket::V6);
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::socket() -> Nedrysoft::ICMPSocket::ICMPSocket * {
+    if (d->m_socket==nullptr) {
+        if (d->m_hostAddress.protocol() == QAbstractSocket::IPv4Protocol) {
+            d->m_socket = Nedrysoft::ICMPSocket::ICMPSocket::createWriteSocket(
+                    d->m_ttl,
+                    Nedrysoft::ICMPSocket::V4 );
+        } else if (d->m_hostAddress.protocol() == QAbstractSocket::IPv6Protocol) {
+            d->m_socket = Nedrysoft::ICMPSocket::ICMPSocket::createWriteSocket(
+                    d->m_ttl,
+                    Nedrysoft::ICMPSocket::V6);
         }
     }
 
-    auto socket = d->m_socketList[d->m_currentSocket];
-
-    d->m_currentSocket = (d->m_currentSocket+1) % d->m_socketList.count();
-
-    return(socket);
+    return d->m_socket;
 }
 
-uint16_t FizzyAde::ICMPPingEngine::ICMPPingTarget::id()
-{
-    return(d->m_id);
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::id() -> uint16_t {
+    return d->m_id;
 }
 
-void *FizzyAde::ICMPPingEngine::ICMPPingTarget::userData()
-{
-    return(d->m_userData);
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::ttl() -> uint16_t {
+    return d->m_ttl;
 }
 
-void FizzyAde::ICMPPingEngine::ICMPPingTarget::setUserData(void *data)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::userData() -> void * {
+    return d->m_userData;
+}
+
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::setUserData(void *data) -> void {
     d->m_userData = data;
 }
 
-QJsonObject FizzyAde::ICMPPingEngine::ICMPPingTarget::saveConfiguration()
-{
-    return(QJsonObject());
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::saveConfiguration() -> QJsonObject {
+    return QJsonObject();
 }
 
-bool FizzyAde::ICMPPingEngine::ICMPPingTarget::loadConfiguration(QJsonObject configuration)
-{
+auto Nedrysoft::ICMPPingEngine::ICMPPingTarget::loadConfiguration(QJsonObject configuration) -> bool {
     Q_UNUSED(configuration)
 
-    return(false);
+    return false;
 }

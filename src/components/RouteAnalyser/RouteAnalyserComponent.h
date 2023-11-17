@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,34 +21,99 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ROUTEANALYSER_ROUTEANALYSERCOMPONENT_H
-#define FIZZYADE_ROUTEANALYSER_ROUTEANALYSERCOMPONENT_H
+#ifndef NEDRYSOFT_ROUTEANALYSER_ROUTEANALYSERCOMPONENT_H
+#define NEDRYSOFT_ROUTEANALYSER_ROUTEANALYSERCOMPONENT_H
 
-#include "RouteAnalyserSpec.h"
-#include "ComponentSystem/IComponentInterface.h"
+#include "ComponentSystem/IComponent.h"
 #include "RouteAnalyserEditor.h"
+#include "RouteAnalyserSpec.h"
 
-class FIZZYADE_ROUTEANALYSER_DLLSPEC RouteAnalyserComponent :
-    public QObject,
-    public FizzyAde::ComponentSystem::IComponentInterface
-{
-    Q_OBJECT
+namespace Nedrysoft::RouteAnalyser {
+    class NewTargetRibbonGroup;
+    class LatencyRibbonGroup;
+    class LatencySettings;
+    class LatencySettingsPage;
+    class TargetSettings;
+    class TargetSettingsPage;
+    class ViewportRibbonGroup;
+}
 
-    Q_PLUGIN_METADATA(IID FizzyAdeComponentInterfaceIID FILE "metadata.json")
+namespace Nedrysoft::AppNap {
+    class AppNap;
+}
 
-    Q_INTERFACES(FizzyAde::ComponentSystem::IComponentInterface)
+/**
+ * @brief       The RouteAnalyserComponent class provides the route analysis feature to the application.
+ */
+class NEDRYSOFT_ROUTEANALYSER_DLLSPEC RouteAnalyserComponent :
+        public QObject,
+        public Nedrysoft::ComponentSystem::IComponent {
 
-public:
-    RouteAnalyserComponent();
-    ~RouteAnalyserComponent();
+    private:
+        Q_OBJECT
 
-    virtual void initialiseEvent();
-    virtual void initialisationFinishedEvent();
+        Q_PLUGIN_METADATA(IID NedrysoftComponentInterfaceIID FILE "metadata.json")
 
-    friend class FizzyAde::RouteAnalyser::RouteAnalyserEditor;
+        Q_INTERFACES(Nedrysoft::ComponentSystem::IComponent)
 
-private:
-    int m_editorContextId = 0;
+    public:
+        /**
+         * @brief       Constructs a new RouteAnalyserComponent instance.
+         */
+        RouteAnalyserComponent();
+
+        /**
+         * @brief       Destroys the RouteAnalyserComponent.
+         */
+        ~RouteAnalyserComponent();
+
+        /**
+         * @brief       Returns the context id for the route analyser.
+         *
+         * @returns     the context id.
+         */
+        auto contextId() -> int;
+
+    public:
+        /**
+         * @brief       The initialiseEvent is called by the component loader to initialise the component.
+         *
+         * @details     Called by the component loader after all components have been loaded, called in load order.
+         */
+        auto initialiseEvent() -> void override;
+
+        /**
+         * @brief       The finaliseEvent is called by the component loader to initialise the component.
+         *
+         * @details     Called by the component loader after all components have been loaded, called in load order.
+         */
+        auto finaliseEvent() -> void override;
+
+        /**
+         * @brief       The initialisationFinishedEvent function is called by the component loader after all
+         *              components have been initialised.
+         *
+         * @details     Called by the component loader after all components have been
+         *              initialised, called in reverse load order.
+         */
+        auto initialisationFinishedEvent() -> void override;
+
+        friend class Nedrysoft::RouteAnalyser::RouteAnalyserEditor;
+
+    private:
+        int m_editorContextId = 0;
+
+        Nedrysoft::RouteAnalyser::NewTargetRibbonGroup *m_newTargetGroupWidget;
+        Nedrysoft::RouteAnalyser::LatencyRibbonGroup *m_latencyGroupWidget;
+        Nedrysoft::RouteAnalyser::ViewportRibbonGroup *m_viewportGroupWidget;
+
+        Nedrysoft::RouteAnalyser::LatencySettingsPage *m_latencySettingsPage;
+        Nedrysoft::RouteAnalyser::TargetSettingsPage *m_targetSettingsPage;
+
+        Nedrysoft::RouteAnalyser::LatencySettings *m_latencySettings;
+        Nedrysoft::RouteAnalyser::TargetSettings *m_targetSettings;
+
+        QAction *m_newTargetAction;
 };
 
-#endif // FIZZYADE_ROUTEANALYSER_ROUTEANALYSERCOMPONENT_H
+#endif // NEDRYSOFT_ROUTEANALYSER_ROUTEANALYSERCOMPONENT_H

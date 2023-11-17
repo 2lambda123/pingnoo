@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +22,26 @@
  */
 
 #include "RouteEngineComponent.h"
-#include "RouteEngine.h"
-#include "ComponentSystem/IComponentManager.h"
-#include <QDebug>
 
-RouteEngineComponent::RouteEngineComponent()
-{
-    m_routeEngine = nullptr;
+RouteEngineComponent::RouteEngineComponent() :
+        m_routeEngineFactory(nullptr) {
+
 }
 
-RouteEngineComponent::~RouteEngineComponent()
-{
-    if (m_routeEngine) {
-        delete m_routeEngine;
+RouteEngineComponent::~RouteEngineComponent() {
 
-        FizzyAde::ComponentSystem::removeObject(m_routeEngine);
+}
+
+auto RouteEngineComponent::initialiseEvent() -> void {
+    m_routeEngineFactory = new Nedrysoft::RouteEngine::RouteEngineFactory();
+
+    Nedrysoft::ComponentSystem::addObject(m_routeEngineFactory);
+}
+
+auto RouteEngineComponent::finaliseEvent() -> void {
+    if (m_routeEngineFactory) {
+        Nedrysoft::ComponentSystem::removeObject(m_routeEngineFactory);
+
+        delete m_routeEngineFactory;
     }
-}
-
-void RouteEngineComponent::initialiseEvent()
-{
-    m_routeEngine = new FizzyAde::RouteEngine::RouteEngine();
-
-    FizzyAde::ComponentSystem::addObject(m_routeEngine);
 }

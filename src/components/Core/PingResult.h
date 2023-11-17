@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,114 +21,120 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_PINGRESULT_H
-#define FIZZYADE_CORE_PINGRESULT_H
+#ifndef NEDRYSOFT_CORE_PINGRESULT_H
+#define NEDRYSOFT_CORE_PINGRESULT_H
 
 #include "CoreSpec.h"
+
+#include <QHostAddress>
+#include <QObject>
 #include <cmath>
 #include <cstdint>
-#include <QObject>
-#include <QHostAddress>
 
-namespace FizzyAde::Core
-{
+namespace Nedrysoft::Core {
     class IPingTarget;
 
     /**
-     * Ping result
-     *
-     * Holds the result of a ping request/response/timeout, this is
-     * passed as a parameter by the ping engine.
+     * @brief       The PingResult class provides information about a ping response.
      */
+    class NEDRYSOFT_CORE_DLLSPEC PingResult {
 
-    class FIZZYADE_CORE_DLLSPEC PingResult
-    {
+        public:
 
-    public:
+            /**
+             * @brief       The result codes for a ping.
+             */
+            enum class ResultCode {
+                Ok,
+                NoReply,
+                TimeExceeded
+            };
 
-        /**
-         * Result codes for a ping
-         */
-        enum PingResultCode {
-            Ok,
-            NoReply,
-            TimeExceeded
-        };
+            /**
+             * @brief       Constructs a PingResult instance.
+             */
+            PingResult();
 
-        PingResult();
-        ~PingResult();
+            /**
+             * @brief       Destroys the PingResult.
+             */
+            ~PingResult();
 
-        /**
-         * Constructs a FZPingResult with parameters
-         *
-         * @param[in] sampleNumber the count which this result is associated with
-         * @param[in] code the result code
-         * @param[in] hostAddress the IP address that responded to the request
-         * @param[in] requestTime the time the request was sent
-         * @param[in] roundTripTime the time taken for the hop to respond
-         * @param[in] target the target that was pinged
-         */
-        PingResult(unsigned long sampleNumber, PingResultCode code, QHostAddress hostAddress, std::chrono::system_clock::time_point requestTime, std::chrono::duration<double> roundTripTime, FizzyAde::Core::IPingTarget *target);
+            /**
+             * @brief       Constructs a PingResult with parameters.
+             *
+             * @param[in]   sampleNumber the count which this result is associated with.
+             * @param[in]   code the result code.
+             * @param[in]   hostAddress the IP address that responded to the request.
+             * @param[in]   requestTime the time the request was sent.
+             * @param[in]   roundTripTime the time taken for the hop to respond.
+             * @param[in]   target the target that was pinged.
+             */
+            PingResult(unsigned long sampleNumber,
+                       ResultCode code,
+                       const QHostAddress &hostAddress,
+                       std::chrono::system_clock::time_point requestTime,
+                       std::chrono::duration<double> roundTripTime,
+                       Nedrysoft::Core::IPingTarget *target);
 
-    public:
+        public:
 
-        /**
-         * The sample number of the request
-         *
-         * @return the sample number
-         */
-        unsigned long sampleNumber();
+            /**
+             * @brief       Returns the sample number of the request.
+             *
+             * @returns     the sample number.
+             */
+            auto sampleNumber() -> unsigned long;
 
-        /**
-         * The time of the response
-         *
-         * @return the reply time
-         */
-        std::chrono::system_clock::time_point requestTime();
+            /**
+             * @brief       Returns the time that the request was transmitted at.
+             *
+             * @returns     the request time.
+             */
+            auto requestTime() -> std::chrono::system_clock::time_point;
 
-        /**
-         * The result code
-         *
-         * @return the result number
-         */
-        PingResultCode code();
+            /**
+             * @brief       The result code for the request (Echo Reply, Timeout).
+             *
+             * @returns     the result code.
+             */
+            auto code() -> ResultCode;
 
-        /**
-         * The host address of the reply
-         *
-         * This may differ from the target ip address, if the TTL of the
-         * request was less than the number of hops to the target then
-         * a time exceeded response will be returned and the IP of last hop
-         * that responded will be returned
-         *
-         * @return the IP address of the reply
-         */
-        QHostAddress hostAddress();
+            /**
+             * @brief       The host address of the reply.
+             *
+             * @details     This may differ from the target ip address, if the TTL of the request was less than the
+             *              number of hops to the target then a time exceeded response will be returned and the IP of
+             *              last hop that responded will be returned.
+             *
+             * @returns     the IP address of the host that sent the reply..
+             */
+            auto hostAddress() -> QHostAddress;
 
-        /**
-         * The round trip time
-         *
-         * The round trip time from the packet being sent to the response
-         *
-         * @return the round trip time
-         */
-        std::chrono::duration<double> roundTripTime();
+            /**
+             * @brief       The round trip time.
+             *
+             * @details     The round trip time is the elapsed time from the packet being sent to the response.
+             *
+             * @returns     the round trip time.
+             */
+            auto roundTripTime() -> std::chrono::duration<double>;
 
-        /**
-         * The target assosciated with this result
-         *
-         * @return the target
-         */
-        FizzyAde::Core::IPingTarget *target();
+            /**
+             * @brief       The target associated with this result.
+             *
+             * @returns     the target.
+             */
+            auto target() -> Nedrysoft::Core::IPingTarget *;
 
-    private:
-        unsigned long m_sampleNumber;
-        PingResult::PingResultCode m_code;
-        QHostAddress m_hostAddress;
-        std::chrono::duration<double> m_roundTripTime = {};
-        FizzyAde::Core::IPingTarget *m_target;
-        std::chrono::system_clock::time_point m_requestTime = {};
+        private:
+            unsigned long m_sampleNumber;
+            PingResult::ResultCode m_code;
+            QHostAddress m_hostAddress;
+            std::chrono::duration<double> m_roundTripTime = {};
+            std::chrono::system_clock::time_point m_requestTime = {};
+            Nedrysoft::Core::IPingTarget *m_target;
     };
 }
 
-#endif // FIZZYADE_CORE_PINGRESULT_H
+#endif // NEDRYSOFT_CORE_PINGRESULT_H

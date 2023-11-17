@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,45 +22,125 @@
  */
 
 #include "RegExHostMasker.h"
-#include "RegExHostMaskerComponent.h"
-#include <QRegularExpressionMatch>
-#include <QJsonArray>
-#include <QDebug>
 
-bool FizzyAde::RegExHostMasker::RegExHostMasker::applyMask(int hop, const QString &hostName, const QString &hostAddress, QString &maskedHostName, QString &maskedHostAddress)
-{
+#include <QDir>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QRegularExpression>
+#include <QStandardPaths>
+
+constexpr auto ConfigurationPath = "Components";
+constexpr auto ConfigurationFilename = "RegExHostMasker.json";
+
+Nedrysoft::RegExHostMasker::RegExHostMasker::RegExHostMasker() {
+    loadFromFile();
+}
+
+auto Nedrysoft::RegExHostMasker::RegExHostMasker::loadFromFile(QString filename, bool append) -> bool {
+    QStringList configPaths = QStandardPaths::standardLocations(QStandardPaths::ConfigLocation);
+
+    if (configPaths.count()) {
+        QFile configurationFile;
+
+        if (filename.isNull()) {
+            configurationFile.setFileName(QDir::cleanPath(QString("%1/%2/%3").arg(configPaths.at(0)).arg(ConfigurationPath).arg(QString(ConfigurationFilename))));
+        } else {
+            configurationFile.setFileName(filename);
+        }
+
+        if (configurationFile.open(QFile::ReadOnly)) {
+            auto jsonDocument = QJsonDocument::fromJson(configurationFile.readAll());
+
+            if (jsonDocument.isObject()) {
+                if (!append) {
+                    m_maskList.clear();
+                }
+
+                loadConfiguration(jsonDocument.object());
+
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+auto Nedrysoft::RegExHostMasker::RegExHostMasker::saveToFile(QString filename) -> void {
+    QStringList configPaths = QStandardPaths::standardLocations(QStandardPaths::ConfigLocation);
+
+    if (configPaths.count()) {
+        QFile configurationFile;
+
+        if (filename.isNull()) {
+            configurationFile.setFileName(QDir::cleanPath(QString("%1/%2/%3").arg(configPaths.at(0)).arg(ConfigurationPath).arg(QString(ConfigurationFilename))));
+        } else {
+            configurationFile.setFileName(filename);
+        }
+
+        QDir dir(configPaths.at(0));
+
+        if (!dir.exists(ConfigurationPath)) {
+             dir.mkpath(ConfigurationPath);
+        }
+
+        if (configurationFile.open(QFile::WriteOnly)) {
+            QJsonObject configuration = saveConfiguration();
+
+            auto jsonDocument = QJsonDocument(configuration);
+
+            if (jsonDocument.isObject()) {
+                configurationFile.write(jsonDocument.toJson());
+            }
+        }
+    }
+}
+
+auto Nedrysoft::RegExHostMasker::RegExHostMasker::applyMask(
+        int hop,
+        const QString &hostName,
+        const QString &hostAddress,
+        QString &maskedHostName,
+        QString &maskedHostAddress ) -> bool {
+
     Q_UNUSED(hop)
+
     auto expressionMatch = QRegularExpressionMatch();
     auto tokenExpression = QRegularExpression(R"(\[\w+\])");
     auto tokenList = QList<QString>();
-    auto searchList = QList<unsigned int>() << MatchHost << MatchAddress;
+    auto searchList = QList<unsigned int>() << static_cast<int>(MatchFlags::MatchHost) << static_cast<int>(MatchFlags::MatchAddress);
     QString *outputString = nullptr;
     bool returnValue = false;
 
-    for(auto matchFlag : searchList) {
-        for(const auto &maskItem : m_maskList) {
-            if (!(maskItem.m_matchFlags & matchFlag)) {
+    maskedHostName = hostName;
+    maskedHostAddress = hostAddress;
+
+    for (auto matchFlag : searchList) {
+        for (const auto &maskItem : m_maskList) {
+            if (!maskItem.m_enabled) {
+                continue;
+            }
+
+            if (!( maskItem.m_matchFlags & matchFlag )) {
                 continue;
             }
 
             auto matchExpression = QRegularExpression(maskItem.m_matchExpression);
 
-            if (matchFlag==MatchHost) {
+            if (static_cast<MatchFlags>(matchFlag) == MatchFlags::MatchHost) {
                 expressionMatch = matchExpression.match(hostName);
-            }
-            else {
-                if (matchFlag==MatchAddress) {
+            } else {
+                if (static_cast<MatchFlags>(matchFlag) == MatchFlags::MatchAddress) {
                     expressionMatch = matchExpression.match(hostAddress);
                 } else {
                     continue;
                 }
             }
 
-            if (maskItem.m_matchFlags & MaskHost) {
+            if (maskItem.m_matchFlags & static_cast<int>(MatchFlags::MaskHost)) {
                 outputString = &maskedHostName;
-            }
-            else {
-                if (maskItem.m_matchFlags & MaskAddress) {
+            } else {
+                if (maskItem.m_matchFlags & static_cast<int>(MatchFlags::MaskAddress)) {
                     outputString = &maskedHostAddress;
                 } else {
                     continue;
@@ -87,10 +170,10 @@ bool FizzyAde::RegExHostMasker::RegExHostMasker::applyMask(int hop, const QStrin
 
                 *outputString = maskItem.m_replacementString;
 
-                for(const auto &token : tokenList) {
+                for (const auto &token : tokenList) {
                     auto searchToken = QString(token).replace(QRegularExpression(R"((\[|\]))"), "");
 
-                    (*outputString).replace(token, expressionMatch.captured(searchToken));
+                    ( *outputString ).replace(token, expressionMatch.captured(searchToken));
                 }
 
                 returnValue = true;
@@ -98,28 +181,39 @@ bool FizzyAde::RegExHostMasker::RegExHostMasker::applyMask(int hop, const QStrin
         }
     }
 
-    return(returnValue);
+    return returnValue;
 }
 
-bool FizzyAde::RegExHostMasker::RegExHostMasker::mask(int hop, const QString &hostName, const QString &hostAddress, QString &maskedHostName, QString &maskedHostAddress)
-{
-    return(applyMask(hop, hostName, hostAddress, maskedHostName, maskedHostAddress));
+auto Nedrysoft::RegExHostMasker::RegExHostMasker::mask(
+        int hop,
+        const QString &hostName,
+        const QString &hostAddress,
+        QString &maskedHostName, QString &maskedHostAddress ) -> bool {
+
+    return applyMask(hop, hostName, hostAddress, maskedHostName, maskedHostAddress);
 }
 
-void FizzyAde::RegExHostMasker::RegExHostMasker::add(unsigned int matchFlags, QString matchExpression, QString replacementString, QString hopString)
-{
-    FizzyAde::RegExHostMasker::RegExHostMaskerItem item;
+auto Nedrysoft::RegExHostMasker::RegExHostMasker::add(
+        unsigned int matchFlags,
+        const QString &description,
+        const QString &matchExpression,
+        const QString &replacementString,
+        const QString &hopString,
+        const bool enabled ) -> void {
+
+    Nedrysoft::RegExHostMasker::RegExHostMaskerItem item;
 
     item.m_matchFlags = matchFlags;
-    item.m_matchExpression = std::move(matchExpression);
+    item.m_matchExpression = matchExpression;
     item.m_replacementString = std::move(replacementString);
-    item.m_hopString = std::move(hopString);
+    item.m_hopString = hopString;
+    item.m_description = description;
+    item.m_enabled = enabled;
 
     m_maskList.append(item);
 }
 
-QJsonObject FizzyAde::RegExHostMasker::RegExHostMasker::saveConfiguration()
-{
+auto Nedrysoft::RegExHostMasker::RegExHostMasker::saveConfiguration() -> QJsonObject {
     auto rootObject = QJsonObject();
     auto itemArray = QJsonArray();
 
@@ -132,31 +226,35 @@ QJsonObject FizzyAde::RegExHostMasker::RegExHostMasker::saveConfiguration()
         object.insert("matchExpression", item.m_matchExpression);
         object.insert("matchReplacementString", item.m_replacementString);
         object.insert("matchHopString", item.m_hopString);
+        object.insert("description", item.m_description);
+        object.insert("enabled", item.m_enabled);
 
         itemArray.append(object);
     }
 
     rootObject.insert("matchItems", itemArray);
 
-    return(rootObject);
+    return rootObject;
 }
 
-bool FizzyAde::RegExHostMasker::RegExHostMasker::loadConfiguration(QJsonObject configuration)
-{
-    Q_UNUSED(configuration)
-
-    if (configuration["id"]!=this->metaObject()->className()) {
-        return(false);
+auto Nedrysoft::RegExHostMasker::RegExHostMasker::loadConfiguration(QJsonObject configuration) -> bool {
+    if (configuration["id"] != this->metaObject()->className()) {
+        return false;
     }
 
     auto array = configuration["matchItems"].toArray();
 
-    for(auto v : array) {
+    for (auto v : array) {
         auto item = v.toObject();
 
-        add(item["matchFlags"].toVariant().toUInt(), item["matchExpression"].toString(), item["matchReplacementString"].toString(), item["matchHopString"].toString());
+        add(item["matchFlags"].toVariant().toUInt(),
+            item["description"].toString(),
+            item["matchExpression"].toString(),
+            item["matchReplacementString"].toString(),
+            item["matchHopString"].toString(),
+            item["enabled"].toBool(true) );
     }
 
-    return(false);
+    return true;
 }
 

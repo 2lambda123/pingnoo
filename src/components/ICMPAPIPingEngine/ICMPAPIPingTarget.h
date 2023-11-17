@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,82 +21,137 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_PINGNOO_ICMPAPIPINGTARGET_H
-#define FIZZYADE_PINGNOO_ICMPAPIPINGTARGET_H
+#ifndef NEDRYSOFT_PINGNOO_ICMPAPIPINGTARGET_H
+#define NEDRYSOFT_PINGNOO_ICMPAPIPINGTARGET_H
 
-#include "ICMPAPIPingEngineSpec.h"
 #include "Core/IPingTarget.h"
+#include "ICMPAPIPingEngineSpec.h"
+
 #if defined(Q_OS_WIN)
-#include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <WinSock2.h>
 #endif
 
-namespace FizzyAde::Pingnoo
-{
+namespace Nedrysoft::Pingnoo {
     class ICMPAPIPingTargetData;
+
     class ICMPAPIPingEngine;
 
     /**
-     * IPingTarget implementation for ICMPAPI
+     * @brief       The ICMPAPIPingTarget describes a host target.
      *
-     * Implements the IPingTarget interface to implement a ping target
-     * that uses ICMP echo packets for measurements.
-     *
+     * @details     A ping target is used by an Nedrysoft::Core::IPingEngine to keep track of destinations to be pinged.
      */
+    class ICMPAPIPingTarget :
+            public Nedrysoft::Core::IPingTarget {
 
-    class ICMPAPIPingTarget : public QObject, public FizzyAde::Core::IPingTarget
-    {
-        Q_OBJECT
+        private:
+            Q_OBJECT
 
-        Q_INTERFACES(FizzyAde::Core::IPingTarget)
+            Q_INTERFACES(Nedrysoft::Core::IPingTarget)
 
-    public:
-        ICMPAPIPingTarget(FizzyAde::Pingnoo::ICMPAPIPingEngine *engine, QHostAddress hostAddress, int ttl=0);
+        public:
+            /**
+             * @brief       Constructs a ICMPAPIPingTarget for the given engine with the supplied host and ttl.
+             *
+             * @param[in]   engine the ping engine to be associated with this target.
+             * @param[in]   hostAddress the target of the ping.
+             * @param[in]   ttl the TTL to be used in the ping.
+             */
+            ICMPAPIPingTarget(Nedrysoft::Pingnoo::ICMPAPIPingEngine *engine, const QHostAddress &hostAddress, int ttl = 0);
 
-        /**
-         * @sa IPingTarget
-         */
-        virtual void setHostAddress(QHostAddress hostAddress);
+        public:
+            /**
+             * @brief       Sets the target host address.
+             *
+             * @see         Nedrysoft::Core::IPingTarget::setHostAddress
+             *
+             * @param[in]   hostAddress the host address to be pinged.
+             */
+            setHostAddress(const QHostAddress &hostAddress) -> void override;
 
-        virtual QHostAddress hostAddress();
+            /**
+             * @brief       Returns the host address for this target.
+             *
+             * @see         Nedrysoft::Core::IPingTarget::hostAddress
+             *
+             * @returns     the host address for this target.
+             */
+            hostAddress() -> QHostAddress override;
 
-        virtual FizzyAde::Core::IPingEngine *engine();
+            /**
+             * @brief       Returns the Nedrysoft::Core::IPingEngine that created this target.
+             *
+             * @see         Nedrysoft::Core::IPingTarget::engine
+             *
+             * @returns     the Nedrysoft::Core::IPingEngine instance.
+             */
+            auto engine() -> Nedrysoft::Core::IPingEngine * override;
 
-        virtual void *userData() ;
+            /**
+             * @brief       Returns the user data attached to this target.
+             *
+             * @see         Nedrysoft::Core::IPingTarget::userData
+             *
+             * @returns     the user data.
+             */
+            auto userData() -> void * override;
 
-        virtual void setUserData(void *data);
+            /**
+             * @brief       Sets the user data attached to this target.
+             *
+             * @see         Nedrysoft::Core::IPingTarget::setUserData
+             *
+             * @param[in]   data the user data.
+             */
+            auto setUserData(void *data) -> void override;
 
-        /**
-         * @sa IConfiguration
-         */
-        virtual QJsonObject saveConfiguration();
-        virtual bool loadConfiguration(QJsonObject configuration);
+            /**
+             * @brief       Returns the TTL of this target.
+             *
+             * @see         Nedrysoft::Core::IPingTarget::ttl
+             *
+             * @returns     the ttl value.
+             */
+            auto ttl() -> uint16_t override;
 
-    protected:
+        public:
+            /**
+             * @brief       Saves the configuration to a JSON object.
+             *
+             * @returns     the JSON configuration.
+             */
+            auto saveConfiguration() -> QJsonObject override;
 
-        /**
-         * Returns a socket descriptor to be used to send an ICMP packet to the target
-         *
-         * @return the socket descriptor
-         */
-#if defined(Q_OS_UNIX)
-        int socketDescriptor();
-#elif defined(Q_OS_WIN)
-        SOCKET socketDescriptor();
-#endif
+            /**
+             * @brief       Loads the configuration.
+             *
+             * @param[in]   configuration the configuration as JSON object.
+             *
+             * @returns     true if loaded; otherwise false.
+             */
+            auto loadConfiguration(QJsonObject configuration) -> bool override;
 
-        /**
-         * Returns the ICMP id used for this target
-         *
-         * @return the id
-         */
-        uint16_t id();
+        protected:
+            /**
+             * @brief       Returns a socket descriptor to be used to send an ICMP packet to the target.
+             *
+             * @returns     the socket descriptor.
+             */
+            auto socketDescriptor() -> SOCKET;
 
-        friend class ICMPAPIPingTransmitter;
+            /**
+             * @brief       Returns the ICMP id used for this target.
+             *
+             * @returns     the id.
+             */
+            auto id() -> uint16_t;
 
-    protected:
-        std::shared_ptr<ICMPAPIPingTargetData> d;
+            friend class ICMPAPIPingTransmitter;
+
+        protected:
+            std::shared_ptr<ICMPAPIPingTargetData> d;
     };
 }
 
-#endif // FIZZYADE_PINGNOO_ICMPAPIPINGTARGET_H
+#endif // NEDRYSOFT_PINGNOO_ICMPAPIPINGTARGET_H

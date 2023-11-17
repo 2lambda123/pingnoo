@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,33 +21,62 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ICMPPINGENGINE_ICMPPINGCOMPONENT_H
-#define FIZZYADE_ICMPPINGENGINE_ICMPPINGCOMPONENT_H
+#ifndef NEDRYSOFT_ICMPPINGENGINE_ICMPPINGCOMPONENT_H
+#define NEDRYSOFT_ICMPPINGENGINE_ICMPPINGCOMPONENT_H
 
+#include "ComponentSystem/IComponent.h"
 #include "ICMPPingEngineSpec.h"
-#include "ComponentSystem/IComponentInterface.h"
 
-namespace FizzyAde::ICMPPingEngine
-{
+namespace Nedrysoft::ICMPPingEngine {
     class ICMPPingEngineFactory;
 }
 
-class FIZZYADE_ICMPPINGENGINE_DLLSPEC ICMPPingComponent :
-    public QObject,
-    public FizzyAde::ComponentSystem::IComponentInterface
-{
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID FizzyAdeComponentInterfaceIID FILE "metadata.json")
-    Q_INTERFACES(FizzyAde::ComponentSystem::IComponentInterface)
+/**
+ * @brief       The ICMPPingComponent class provides a socket based ICMP ping engine for all platforms.
+ */
+class NEDRYSOFT_ICMPPINGENGINE_DLLSPEC ICMPPingComponent :
+        public QObject,
+        public Nedrysoft::ComponentSystem::IComponent {
 
-public:
-    ICMPPingComponent();
-    ~ICMPPingComponent();
+    private:
+        Q_OBJECT
 
-    virtual void initialiseEvent();
+        Q_PLUGIN_METADATA(IID NedrysoftComponentInterfaceIID FILE "metadata.json")
 
-private:
-    FizzyAde::ICMPPingEngine::ICMPPingEngineFactory *m_engineFactory;
+        Q_INTERFACES(Nedrysoft::ComponentSystem::IComponent)
+
+    public:
+        /**
+         * @brief       Constructs the ICMPPingComponent.
+         */
+        ICMPPingComponent();
+
+        /**
+         * @brief       Destroys the ICMPPingComponent.
+         */
+        ~ICMPPingComponent();
+
+    public:
+        /**
+         * @brief       The initialiseEvent is called by the component loader to initialise the component.
+         *
+         * @details     Called by the component loader after all components have been loaded, called in load order.
+         *
+         * @see         Nedrysoft::ComponentSystem::IComponent::initialiseEvent
+         */
+        auto initialiseEvent() -> void override;
+
+        /**
+         *  @brief       The finaliseEvent is called by the component loader to de-initialise the component.
+         *
+         *  @details    Called by the component loader in reverse load order to shutdown the component.
+         *
+         *  @see         Nedrysoft::ComponentSystem::IComponent::finaliseEvent
+         */
+        auto finaliseEvent() -> void override;
+
+    private:
+        Nedrysoft::ICMPPingEngine::ICMPPingEngineFactory *m_engineFactory;
 };
 
-#endif // FIZZYADE_ICMPPINGENGINE_ICMPPINGCOMPONENT_H
+#endif // NEDRYSOFT_ICMPPINGENGINE_ICMPPINGCOMPONENT_H

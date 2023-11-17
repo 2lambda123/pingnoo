@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,100 +22,90 @@
  */
 
 #include "ICMPAPIPingItem.h"
-#include <QTimer>
+
 #include <QDebug>
+#include <QTimer>
 
-class FizzyAde::Pingnoo::ICMPAPIPingItemData
-{
-public:
-    ICMPAPIPingItemData(FizzyAde::Pingnoo::ICMPAPIPingItem *parent)
-    {
-        m_pingItem = parent;
-        m_id = 0;
-        m_sequenceId = 0;
-        m_serviced = false;
-        m_target = nullptr;
-        m_sampleNumber = 0;
-    }
+class Nedrysoft::Pingnoo::ICMPAPIPingItemData {
+    public:
+        ICMPAPIPingItemData(Nedrysoft::Pingnoo::ICMPAPIPingItem *parent) :
+                m_pingItem(parent),
+                m_id(0),
+                m_sequenceId(0),
+                m_serviced(false),
+                m_target(nullptr),
+                m_sampleNumber(0) {
 
-    friend class ICMPAPIPingItem;
+        }
 
-private:
-    FizzyAde::Pingnoo::ICMPAPIPingItem* m_pingItem;
+        friend class ICMPAPIPingItem;
 
-    std::chrono::high_resolution_clock::time_point m_transmitTime;
+    private:
+        Nedrysoft::Pingnoo::ICMPAPIPingItem *m_pingItem;
 
-    uint16_t m_id;
-    uint16_t m_sequenceId;
+        std::chrono::high_resolution_clock::time_point m_transmitTime;
 
-    unsigned long m_sampleNumber;
+        uint16_t m_id;
+        uint16_t m_sequenceId;
 
-    bool m_serviced;
+        unsigned long m_sampleNumber;
 
-    FizzyAde::Pingnoo::ICMPAPIPingTarget *m_target;
+        bool m_serviced;
+
+        Nedrysoft::Pingnoo::ICMPAPIPingTarget *m_target;
 };
 
-FizzyAde::Pingnoo::ICMPAPIPingItem::ICMPAPIPingItem() :
-    d(std::make_shared<FizzyAde::ICMPAPIPingEngine::ICMPAPIPingItemData>(this))
-{
+Nedrysoft::Pingnoo::ICMPAPIPingItem::ICMPAPIPingItem() :
+        d(std::make_shared<Nedrysoft::ICMPAPIPingEngine::ICMPAPIPingItemData>(this)) {
+
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingItem::setId(uint16_t id)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::setId(uint16_t id) -> void {
     d->m_id = id;
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingItem::setSequenceId(uint16_t sequence)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::setSequenceId(uint16_t sequence) -> void {
     d->m_sequenceId = sequence;
 }
 
-uint16_t FizzyAde::Pingnoo::ICMPAPIPingItem::sequenceId()
-{
-    return(d->m_sequenceId);
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::sequenceId() -> uint16_t {
+    return d->m_sequenceId;
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingItem::setTransmitTime(std::chrono::high_resolution_clock::time_point time)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::setTransmitTime(
+        std::chrono::high_resolution_clock::time_point time ) -> void {
+
     d->m_transmitTime = time;
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingItem::setServiced(bool serviced)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::setServiced(bool serviced) -> void {
     d->m_serviced = serviced;
 }
 
-bool FizzyAde::Pingnoo::ICMPAPIPingItem::serviced()
-{
-    return(d->m_serviced);
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::serviced() -> bool {
+    return d->m_serviced;
 }
 
-uint16_t FizzyAde::Pingnoo::ICMPAPIPingItem::id()
-{
-    return(d->m_id);
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::id() -> uint16_t {
+    return d->m_id;
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingItem::setTarget(FizzyAde::Pingnoo::ICMPAPIPingTarget *target)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::setTarget(Nedrysoft::Pingnoo::ICMPAPIPingTarget *target) -> void {
     d->m_target = target;
 }
 
-FizzyAde::Pingnoo::ICMPAPIPingTarget *FizzyAde::Pingnoo::ICMPAPIPingItem::target()
-{
-    return(d->m_target);
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::target() -> Nedrysoft::Pingnoo::ICMPAPIPingTarget * {
+    return d->m_target;
 }
 
-std::chrono::high_resolution_clock::time_point FizzyAde::Pingnoo::ICMPAPIPingItem::transmitTime()
-{
-    return(d->m_transmitTime);
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::transmitTime() -> std::chrono::high_resolution_clock::time_point {
+    return d->m_transmitTime;
 }
 
-void FizzyAde::Pingnoo::ICMPAPIPingItem::setSampleNumber(unsigned long sampleNumber)
-{
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::setSampleNumber(unsigned long sampleNumber) -> void {
     d->m_sampleNumber = sampleNumber;
 }
 
-unsigned long FizzyAde::Pingnoo::ICMPAPIPingItem::sampleNumber()
-{
-    return(d->m_sampleNumber);
+auto Nedrysoft::Pingnoo::ICMPAPIPingItem::sampleNumber() -> unsigned long {
+    return d->m_sampleNumber;
 }

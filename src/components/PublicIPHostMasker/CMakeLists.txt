@@ -1,8 +1,11 @@
 #
 # Copyright (C) 2020 Adrian Carpenter
 #
-# This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
-# An open source ping path analyser
+# This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+#
+# An open-source cross-platform traceroute analyser.
+#
+# Created by Adrian Carpenter on 27/03/2020.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,16 +30,22 @@ pingnoo_add_sources(
     PublicIPHostMasker.h
     PublicIPHostMaskerComponent.cpp
     PublicIPHostMaskerComponent.h
+    PublicIPHostMaskerSettingsPage.cpp
+    PublicIPHostMaskerSettingsPage.h
+    PublicIPHostMaskerSettingsPageWidget.cpp
+    PublicIPHostMaskerSettingsPageWidget.h
+    PublicIPHostMaskerSettingsPageWidget.ui
     PublicIPHostMaskerSpec.h
 )
 
+pingnoo_set_description("ip masker for public ip component")
 
-pingnoo_use_qt_libraries(Network)
+pingnoo_use_qt_libraries(Core Network Widgets)
 
 pingnoo_use_component(Core)
 
 pingnoo_use_shared_library(ComponentSystem)
 
-pingnoo_set_component_metadata("1.0.0" "Host Maskers" "Provides a host masker which masks the detected public IP.")
+pingnoo_set_component_metadata("Host Maskers" "Provides a host masker which masks the detected public IP.")
 
 pingnoo_end_component()

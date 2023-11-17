@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,54 +23,55 @@
 
 #include "PingResult.h"
 
-FizzyAde::Core::PingResult::PingResult()
-{
-    m_sampleNumber = 0;
-    m_code = PingResult::NoReply;
-    m_hostAddress = QHostAddress();
-    m_roundTripTime = std::chrono::duration<double>(0);
-    m_requestTime = std::chrono::system_clock::now();
-    m_target = nullptr;
+Nedrysoft::Core::PingResult::PingResult() :
+    m_sampleNumber(0),
+    m_code(PingResult::ResultCode::NoReply),
+    m_hostAddress(QHostAddress()),
+    m_roundTripTime(std::chrono::duration<double>(0)),
+    m_requestTime(std::chrono::system_clock::now()),
+    m_target(nullptr) {
+
 }
 
-FizzyAde::Core::PingResult::~PingResult() = default;
+Nedrysoft::Core::PingResult::~PingResult() = default;
 
-FizzyAde::Core::PingResult::PingResult(unsigned long sampleNumber, PingResultCode code, QHostAddress hostAddress, std::chrono::system_clock::time_point requestTime, std::chrono::duration<double> roundTripTime, FizzyAde::Core::IPingTarget *target)
-{
-    m_sampleNumber = sampleNumber;
-    m_code = code;
-    m_hostAddress = std::move(hostAddress);
-    m_requestTime = requestTime;
-    m_roundTripTime = roundTripTime;
-    m_target = target;
+Nedrysoft::Core::PingResult::PingResult(
+        unsigned long sampleNumber,
+        PingResult::ResultCode code,
+        const QHostAddress &hostAddress,
+        std::chrono::system_clock::time_point requestTime,
+        std::chrono::duration<double> roundTripTime,
+        Nedrysoft::Core::IPingTarget *target) :
+
+            m_sampleNumber(sampleNumber),
+            m_code(code),
+            m_hostAddress(hostAddress),
+            m_roundTripTime(roundTripTime),
+            m_requestTime(requestTime),
+            m_target(target) {
+
 }
 
-unsigned long FizzyAde::Core::PingResult::sampleNumber()
-{
-    return(m_sampleNumber);
+auto Nedrysoft::Core::PingResult::sampleNumber() -> unsigned long {
+    return m_sampleNumber;
 }
 
-std::chrono::system_clock::time_point FizzyAde::Core::PingResult::requestTime()
-{
-    return(m_requestTime);
+auto Nedrysoft::Core::PingResult::requestTime() -> std::chrono::system_clock::time_point {
+    return m_requestTime;
 }
 
-FizzyAde::Core::PingResult::PingResultCode FizzyAde::Core::PingResult::code()
-{
-    return(m_code);
+auto Nedrysoft::Core::PingResult::code() -> Nedrysoft::Core::PingResult::ResultCode {
+    return m_code;
 }
 
-QHostAddress FizzyAde::Core::PingResult::hostAddress()
-{
-    return(m_hostAddress);
+auto Nedrysoft::Core::PingResult::hostAddress() -> QHostAddress {
+    return m_hostAddress;
 }
 
-std::chrono::duration<double> FizzyAde::Core::PingResult::roundTripTime()
-{
-    return(m_roundTripTime);
+auto Nedrysoft::Core::PingResult::roundTripTime() -> std::chrono::duration<double> {
+    return m_roundTripTime;
 }
 
-FizzyAde::Core::IPingTarget *FizzyAde::Core::PingResult::target()
-{
-    return(m_target);
+auto Nedrysoft::Core::PingResult::target() -> Nedrysoft::Core::IPingTarget * {
+    return m_target;
 }

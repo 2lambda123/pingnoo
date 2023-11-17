@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,49 +21,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_CORE_ICONFIGURATION_H
-#define FIZZYADE_CORE_ICONFIGURATION_H
+#ifndef NEDRYSOFT_CORE_ICONFIGURATION_H
+#define NEDRYSOFT_CORE_ICONFIGURATION_H
 
-#include "CoreSpec.h"
 #include "ComponentSystem/IInterface.h"
-#include <QObject>
-#include <QJsonObject>
+#include "CoreSpec.h"
 
-namespace FizzyAde::Core
-{
+#include <QJsonObject>
+#include <QObject>
+
+namespace Nedrysoft::Core {
     class IPingEngine;
 
     /**
-     * Interface definition of a ping engine
-     *
-     * An engine implements the logic of transmitting, receiving
-     * and associating replies to ping requests, it then signals
-     * when a ping result is available
-     *
+     * @brief       The IConfiguration interface provides a contract for loading & saving data.
      */
+    class NEDRYSOFT_CORE_DLLSPEC IConfiguration {
+        public:
+            /**
+             * @brief       Saves the configuration to a JSON object.
+             *
+             * @returns     the JSON configuration.
+             */
+            virtual auto saveConfiguration() -> QJsonObject = 0;
 
-    class FIZZYADE_CORE_DLLSPEC IConfiguration
-    {
-
-    public:
-
-        /**
-         * Saves the configuration
-         *
-         * @return the configuration
-         */
-        virtual QJsonObject saveConfiguration() = 0;
-
-        /**
-         * Loads the configuration
-         *
-         * @param configuration the configuration
-         * @return true if loaded, false otherwise
-         */
-        virtual bool loadConfiguration(QJsonObject configuration) = 0;
+            /**
+             * @brief       Loads the configuration.
+             *
+             * @param[in]   configuration the configuration as JSON object.
+             *
+             * @returns     true if loaded; otherwise false.
+             */
+            virtual auto loadConfiguration(QJsonObject configuration) -> bool = 0;
     };
 }
 
-Q_DECLARE_INTERFACE(FizzyAde::Core::IConfiguration, "com.fizzyade.core.IConfiguration/1.0.0")
+Q_DECLARE_INTERFACE(Nedrysoft::Core::IConfiguration, "com.nedrysoft.core.IConfiguration/1.0.0")
 
-#endif // FIZZYADE_CORE_ICONFIGURATION_H
+#endif // NEDRYSOFT_CORE_ICONFIGURATION_H

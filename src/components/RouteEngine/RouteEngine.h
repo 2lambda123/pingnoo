@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,55 +21,70 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ROUTEENGINE_ROUTEENGINE_H
-#define FIZZYADE_ROUTEENGINE_ROUTEENGINE_H
+#ifndef NEDRYSOFT_ROUTEENGINE_ROUTEENGINE_H
+#define NEDRYSOFT_ROUTEENGINE_ROUTEENGINE_H
 
 #include "Core/IRouteEngine.h"
-#include <QObject>
-#include <QList>
+
+#include "Core/Core.h"
+#include "Core/PingResult.h"
 #include <QHostAddress>
+#include <QHostInfo>
+#include <QList>
 
 class QThread;
 
-namespace FizzyAde::RouteEngine
-{
-    class RouteWorker;
+namespace Nedrysoft::Core {
+    class IPingEngineFactory;
+    class IPingEngine;
+};
 
+namespace Nedrysoft::RouteEngine {
     /**
-     * IRouteEngine implementation
+     * @brief       The RouteEngine provides an implementation of IRouteEngine.
      *
-     * Implements the IRouteEngine to determine the list of
-     * hops between the source and target
-     *
+     * @details     Implements the IRouteEngine to determine the list of hops between the source and target.
      */
-
     class RouteEngine :
-        public FizzyAde::Core::IRouteEngine
-    {
-        Q_OBJECT
+            public Nedrysoft::Core::IRouteEngine {
 
-        Q_INTERFACES(FizzyAde::Core::IRouteEngine)
+        private:
+            Q_OBJECT
 
-    public:
-        /**
-         * Default constructor
-         */
-        RouteEngine();
+            Q_INTERFACES(Nedrysoft::Core::IRouteEngine)
 
-        /**
-         * destructor
-         */
-        ~RouteEngine();
+        public:
+            /**
+             * @brief       Constructs a RouteEngine.
+             */
+            RouteEngine();
 
-        /**
-         * @sa IRouteEngine
-         */
-        virtual void findRoute(QString host);
+        public:
+            /**
+             * @brief       Starts route discovery for a host.
+             *
+             * @notes       Route discovery is a asynchronous operation, the result signal is emitted when the
+             *              discovery is completed.
+             *
+             * @param[in]   factory the ping engine to be used for route discovery.
+             * @param[in]   host the target host name or address.
+             * @param[in]   ipVersion the IP version to be used for discovery.
+             */
+            auto findRoute(
+                    Nedrysoft::Core::IPingEngineFactory *engineFactory,
+                    QString host,
+                    Nedrysoft::Core::IPVersion ipVersion = Nedrysoft::Core::IPVersion::V4 ) -> void override;
 
-    private:
-        QThread *m_workerThread;                     //! The route finder thread
-        RouteWorker *m_worker;                       //! The thread worker for route finder
+        private:
+            Nedrysoft::Core::IPVersion m_ipVersion;                    //! The IP version to use for the route finder instance.
+            Nedrysoft::Core::IPingEngineFactory *m_pingEngineFactory;
+            Nedrysoft::Core::IPingEngine *m_pingEngine;
+            QMap<int, Nedrysoft::Core::PingResult> m_replyMap;
+            QTimer *m_timeoutTimer;
+            QString m_host;                                            //! this is the intended target.
+            int m_replyHop;                                            //! the hops to the target.
+            QList<QHostAddress> m_targetAddresses;                     //! this is the resolved target addresses.
     };
 }
 
-#endif // FIZZYADE_ROUTEENGINE_ROUTEENGINE_H
+#endif // NEDRYSOFT_ROUTEENGINE_ROUTEENGINE_H

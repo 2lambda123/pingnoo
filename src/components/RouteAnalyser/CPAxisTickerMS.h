@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,30 +21,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_ROUTEANALYSER_CPAXISTICKERMS_H
-#define FIZZYADE_ROUTEANALYSER_CPAXISTICKERMS_H
+#ifndef NEDRYSOFT_ROUTEANALYSER_CPAXISTICKERMS_H
+#define NEDRYSOFT_ROUTEANALYSER_CPAXISTICKERMS_H
 
 #include "QCustomPlot/qcustomplot.h"
 
-namespace FizzyAde::RouteAnalyser
-{
+namespace Nedrysoft::RouteAnalyser {
     /**
-     * Axis ticker class to convert to ms
-     *
-     * Displays double time in seconds as integer milliseconds
-     *
+     * @brief       The QCPAxisTicker is a QCustomPlot Axis ticker class that displays milliseconds.
      */
-
     class CPAxisTickerMS :
-        public QCPAxisTicker
-    {
-    public:
+            public QCPAxisTicker {
 
-        /**
-         * @sa QCPAxisTicker
-         */
-        virtual QString getTickLabel(double tick, const QLocale &locale, QChar formatChar, int precision);
+        public:
+            /**
+             * @brief       Returns a string which expresses the given tick as milliseconds.
+             *
+             * @param[in]   tick the tick value.
+             * @param[in]   locale the locale to be used.
+             * @param[in]   formatChar the format used for floating point conversions.  (f or g)
+             * @param[in]   precision the precision used for floating point conversions.
+             *
+             * @returns     the tick formatted as a string.
+             */
+            auto getTickLabel(double tick, const QLocale &locale, QChar formatChar, int precision) -> QString override;
     };
 }
 
-#endif // FIZZYADE_ROUTEANALYSER_CPAXISTICKERMS_H
+#endif // NEDRYSOFT_ROUTEANALYSER_CPAXISTICKERMS_H

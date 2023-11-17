@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
+ * This file is part of pingnoo (https://github.com/nedrysoft/pingnoo)
  * An open source ping path analyser
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,55 +19,62 @@
  */
 
 #include "Command.h"
+
 #include "ActionProxy.h"
-#include "IContextManager.h"
+
 #include <QDebug>
 
-FizzyAde::Core::Command::Command()
-{
-    m_action = new ActionProxy();
+Nedrysoft::Core::Command::Command(QString id) :
+        m_action(new ActionProxy()),
+        m_id(id) {
+
 }
 
-FizzyAde::Core::Command::~Command()
-{
-    delete m_action;
+Nedrysoft::Core::Command::~Command() {
+    if (m_action) {
+        delete m_action;
+    }
 }
 
-QAction *FizzyAde::Core::Command::action()
-{
-    return(m_action);
+auto Nedrysoft::Core::Command::action() -> QAction * {
+    return m_action;
 }
 
-void FizzyAde::Core::Command::registerAction(QAction *action, const FizzyAde::Core::ContextList &contexts)
-{
+auto Nedrysoft::Core::Command::registerAction(
+        QAction *action,
+        const Nedrysoft::Core::ContextList &contexts)  -> void {
+
+    action->setParent(this);
+
     connect(action, &QAction::changed, [action, this] {
         m_action->setEnabled(action->isEnabled());
     });
 
-    for(auto contextId : contexts) {
+    for (auto contextId : contexts) {
         m_actions[contextId] = action;
     }
 
-    if (FizzyAde::Core::IContextManager::getInstance()) {
-        setContext(FizzyAde::Core::IContextManager::getInstance()->context());
+    if (Nedrysoft::Core::IContextManager::getInstance()) {
+        setContext(Nedrysoft::Core::IContextManager::getInstance()->context());
     }
 }
 
-void FizzyAde::Core::Command::setContext(int contextId)
-{
+auto Nedrysoft::Core::Command::setContext(int contextId) -> void {
     if (m_actions.contains(contextId)) {
         m_action->setActive(m_actions[contextId]);
     } else {
-        m_action->setActive(nullptr);
+        if (m_actions.contains(Nedrysoft::Core::GlobalContext)) {
+            m_action->setActive(m_actions[Nedrysoft::Core::GlobalContext]);
+        } else {
+            m_action->setActive(nullptr);
+        }
     }
 }
 
-void FizzyAde::Core::Command::setActive(bool state)
-{
+auto Nedrysoft::Core::Command::setActive(bool state) -> void {
     m_action->setEnabled(state);
 }
 
-bool FizzyAde::Core::Command::active()
-{
-    return(m_action->isEnabled());
+auto Nedrysoft::Core::Command::active() ->bool {
+    return m_action->isEnabled();
 }

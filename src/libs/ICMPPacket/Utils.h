@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,18 +21,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIZZYADE_UTILS_H
-#define FIZZYADE_UTILS_H
+#ifndef NEDRYSOFT_UTILS_H
+#define NEDRYSOFT_UTILS_H
 
-#include <stdint.h>
 #include <limits.h>
+#include <stdint.h>
 
-namespace FizzyAde::Utils
-{
-    constexpr uint32_t fzMake32(uint16_t high, uint16_t low)
-    {
+namespace Nedrysoft::Utils {
+    /**
+     * @brief       Convert 16 bit words to 32 bit.
+     *
+     * @note        this uses the constant CHAR_BIT rather than the immediate value 8 to prevent warnings from
+     *              clang-tidy.
+     *
+     * @param[in]   high the high 16 bits.
+     * @param[in]   low the low 16 bits.
+     *
+     * @returns     the 32 bit result.
+     */
+    constexpr uint32_t fzMake32(uint16_t high, uint16_t low) {
         return (static_cast<uint32_t>((high<<(sizeof(high)*CHAR_BIT) | low)));
     }
 }
 
-#endif // FIZZYADE_UTILS_H
+#endif // NEDRYSOFT_UTILS_H

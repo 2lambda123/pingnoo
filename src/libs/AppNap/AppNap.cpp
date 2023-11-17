@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,22 +23,19 @@
 
 #include "AppNap.h"
 
-FizzyAde::AppNap::AppNap::AppNap()
-{
+Nedrysoft::AppNap::AppNap::AppNap() {
 #if defined(Q_OS_MACOS)
     mac_init();
 #endif
 }
 
-FizzyAde::AppNap::AppNap *FizzyAde::AppNap::AppNap::getInstance()
-{
-    static auto instance = new FizzyAde::AppNap::AppNap();
+auto Nedrysoft::AppNap::AppNap::getInstance() -> Nedrysoft::AppNap::AppNap * {
+    static AppNap instance;
 
-    return(instance);
+    return &instance;
 }
 
-void FizzyAde::AppNap::AppNap::prevent(const QString &reason)
-{
+void Nedrysoft::AppNap::AppNap::prevent(const QString &reason) {
 #if defined(Q_OS_MACOS)
     mac_prevent(reason);
 #else
@@ -43,8 +43,7 @@ void FizzyAde::AppNap::AppNap::prevent(const QString &reason)
 #endif
 }
 
-void FizzyAde::AppNap::AppNap::allow()
-{
+void Nedrysoft::AppNap::AppNap::allow() {
 #if defined(Q_OS_MACOS)
     mac_allow();
 #endif

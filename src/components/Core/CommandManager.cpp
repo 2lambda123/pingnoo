@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,69 +22,99 @@
  */
 
 #include "CommandManager.h"
-#include "ICore.h"
+
 #include "Command.h"
-#include "Menu.h"
+#include "ICore.h"
 #include "Pingnoo.h"
-#include <QDebug>
+
 #include <QMenu>
 #include <QMenuBar>
-#include <QMainWindow>
-#include <QAction>
 
-FizzyAde::Core::CommandManager::CommandManager() = default;
+Nedrysoft::Core::CommandManager::CommandManager() = default;
 
-FizzyAde::Core::ICommand *FizzyAde::Core::CommandManager::registerAction(QAction *action, QString id, const FizzyAde::Core::ContextList &contexts)
-{
+Nedrysoft::Core::CommandManager::~CommandManager() {
+    qDeleteAll(m_menuMap);
+    qDeleteAll(m_commandMap);
+}
+
+auto Nedrysoft::Core::CommandManager::registerAction(
+        QAction *action,
+        QString id,
+        const Nedrysoft::Core::ContextList &contexts) -> Nedrysoft::Core::ICommand * {
+
     if (m_commandMap.contains(id)) {
         auto command = m_commandMap[id];
 
         command->registerAction(action, contexts);
+        command->setContext(Nedrysoft::Core::IContextManager::getInstance()->context());
 
-        return(command);
+        command->setActive(action->isEnabled());
+
+        return command;
     }
 
-    auto command = new Command();
+    auto command = new Command(id);
 
     command->registerAction(action, contexts);
 
     command->action()->setText(action->text());
 
+    command->setContext(Nedrysoft::Core::IContextManager::getInstance()->context());
+
     m_commandMap[id] = command;
 
-    return(command);
+    return command;
 }
 
-void FizzyAde::Core::CommandManager::setContext(int contextId)
-{
+auto Nedrysoft::Core::CommandManager::registerAction(
+        QAction *action,
+        Nedrysoft::Core::ICommand *command,
+        const Nedrysoft::Core::ContextList &contexts) -> bool {
+
+    Nedrysoft::Core::Command *commandClass = qobject_cast<Nedrysoft::Core::Command *>(command);
+
+    if (commandClass) {
+        commandClass->registerAction(action, contexts);
+        commandClass->setContext(Nedrysoft::Core::IContextManager::getInstance()->context());
+
+        commandClass->setActive(action->isEnabled());
+    }
+
+    return false;
+}
+
+auto Nedrysoft::Core::CommandManager::setContext(int contextId) -> void {
     auto commandIterator = QMapIterator<QString, Command *>(m_commandMap);
 
-    while(commandIterator.hasNext()) {
+    while (commandIterator.hasNext()) {
         commandIterator.next();
 
         commandIterator.value()->setContext(contextId);
     }
 }
 
-// also add createPopupMenu
+// TODO: also add createPopupMenu
 
-FizzyAde::Core::IMenu *FizzyAde::Core::CommandManager::createMenu(const QString &identifier, IMenu *parentMenu)
-{
+auto Nedrysoft::Core::CommandManager::createMenu(
+        const QString &identifier,
+        IMenu *parentMenu ) -> Nedrysoft::Core::IMenu * {
+
     Q_UNUSED(identifier)
-    FizzyAde::Core::Menu *newMenu = nullptr;
+
+    Nedrysoft::Core::Menu *newMenu;
 
     if (m_menuMap.contains(identifier)) {
-        return(m_menuMap[identifier]);
+        return m_menuMap[identifier];
     }
 
     if (!parentMenu) {
-        auto mainWindow = FizzyAde::Core::mainWindow();
+        auto mainWindow = Nedrysoft::Core::mainWindow();
 
         mainWindow->menuBar()->show();
 
-        newMenu = new FizzyAde::Core::Menu(mainWindow->menuBar());
+        newMenu = new Nedrysoft::Core::Menu(mainWindow->menuBar());
     } else {
-        auto parent = qobject_cast<FizzyAde::Core::Menu *>(parentMenu);
+        auto parent = qobject_cast<Nedrysoft::Core::Menu *>(parentMenu);
 
         QMenuBar *parentMenuBar = nullptr;
 
@@ -91,7 +124,7 @@ FizzyAde::Core::IMenu *FizzyAde::Core::CommandManager::createMenu(const QString 
 
         auto menu = new QMenu(Pingnoo::Constants::menuText(identifier), parentMenuBar);
 
-        newMenu = new FizzyAde::Core::Menu(menu);
+        newMenu = new Nedrysoft::Core::Menu(menu);
 
         if (parentMenuBar) {
             parentMenuBar->addAction(menu->menuAction());
@@ -100,24 +133,22 @@ FizzyAde::Core::IMenu *FizzyAde::Core::CommandManager::createMenu(const QString 
 
     m_menuMap[identifier] = newMenu;
 
-    return(newMenu);
+    return newMenu;
 }
 
-FizzyAde::Core::IMenu *FizzyAde::Core::CommandManager::findMenu(const QString &identifier)
-{
+auto Nedrysoft::Core::CommandManager::findMenu(const QString &identifier) -> Nedrysoft::Core::IMenu * {
     if (m_menuMap.contains(identifier)) {
-        return(m_menuMap[identifier]);
+        return m_menuMap[identifier];
     }
 
-    return(nullptr);
+    return nullptr;
 }
 
-FizzyAde::Core::ICommand *FizzyAde::Core::CommandManager::findCommand(const QString &identifier)
-{
+auto Nedrysoft::Core::CommandManager::findCommand(const QString &identifier) -> Nedrysoft::Core::ICommand * {
     if (m_commandMap.contains(identifier)) {
-        return(m_commandMap[identifier]);
+        return m_commandMap[identifier];
     }
 
-    return(nullptr);
+    return nullptr;
 }
 

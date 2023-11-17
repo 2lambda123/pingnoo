@@ -1,8 +1,11 @@
 /*
  * Copyright (C) 2020 Adrian Carpenter
  *
- * This file is part of pingnoo (https://github.com/fizzyade/pingnoo)
- * An open source ping path analyser
+ * This file is part of Pingnoo (https://github.com/nedrysoft/pingnoo)
+ *
+ * An open-source cross-platform traceroute analyser.
+ *
+ * Created by Adrian Carpenter on 27/03/2020.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +22,30 @@
  */
 
 #include "HostIPGeoIPProviderComponent.h"
-#include "HostIPGeoIPProvider.h"
-#include "ComponentSystem/IComponentManager.h"
-#include <QDebug>
 
-HostIPGeoIPProviderComponent::HostIPGeoIPProviderComponent()
-{
-    m_provider = nullptr;
+#include "ComponentSystem/IComponentManager.h"
+#include "HostIPGeoIPProvider.h"
+
+HostIPGeoIPProviderComponent::HostIPGeoIPProviderComponent() :
+        m_provider(nullptr) {
+
 }
 
-HostIPGeoIPProviderComponent::~HostIPGeoIPProviderComponent()
-{
+HostIPGeoIPProviderComponent::~HostIPGeoIPProviderComponent() {
+
+}
+
+auto HostIPGeoIPProviderComponent::initialiseEvent() -> void {
+    m_provider = new Nedrysoft::HostIPGeoIPProvider::HostIPGeoIPProvider();
+
+    Nedrysoft::ComponentSystem::addObject(m_provider);
+}
+
+auto HostIPGeoIPProviderComponent::finaliseEvent() -> void {
     if (m_provider) {
-        FizzyAde::ComponentSystem::removeObject(m_provider);
+        Nedrysoft::ComponentSystem::removeObject(m_provider);
 
         delete m_provider;
     }
 }
 
-void HostIPGeoIPProviderComponent::initialiseEvent()
-{
-    m_provider = new FizzyAde::HostIPGeoIPProvider::HostIPGeoIPProvider();
-
-    FizzyAde::ComponentSystem::addObject(m_provider);
-}
